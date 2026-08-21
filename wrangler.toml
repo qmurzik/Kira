@@ -18,8 +18,8 @@ SHORT_TERM_LIMIT = "12"
 SHORT_TERM_TTL_SECONDS = "604800"
 PHOTO_AUTO_INTERVAL_HOURS = "72"
 OWNER_TELEGRAM_ID = "5110155633"
-PROACTIVE_MESSAGE_PROBABILITY = "0.6"
-PROACTIVE_MESSAGE_MIN_GAP_HOURS = "3"
+PROACTIVE_MESSAGE_PROBABILITY = "0.9"
+PROACTIVE_MESSAGE_MIN_GAP_HOURS = "0.4"
 
 # ── Workers AI (бесплатная модель по умолчанию) ─────────────────────
 [ai]
@@ -43,8 +43,10 @@ id = "123524bd7acd461e8add70e138cd17a2"
 # binding = "KIRA_ASSETS"
 # bucket_name = "kira-assets"
 
-# ── Cron: ежедневная гигиена (03:00 UTC) + чаще срабатываний в день
-# (07:00-22:00 UTC ≈ 10:00-01:00 MSK, раз в 2 часа) для шанса, что Кира сама
-# напишет создателю первой (см. src/telegram/proactiveMessages.ts).
+# ── Cron: ежедневная гигиена (03:00 UTC) + каждые 30 минут в окне
+# 06:00-23:59 UTC (≈ 09:00-02:59 MSK) для шанса, что Кира сама напишет
+# создателю первой (см. src/telegram/proactiveMessages.ts). Вместе с
+# PROACTIVE_MESSAGE_PROBABILITY/MIN_GAP_HOURS в среднем выходит "раз в
+# полчаса плюс-минус", а не жёсткий таймер.
 [triggers]
-crons = ["0 3 * * *", "0 7-22/2 * * *"]
+crons = ["0 3 * * *", "*/30 6-23 * * *"]
