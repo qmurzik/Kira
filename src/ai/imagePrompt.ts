@@ -48,10 +48,23 @@ const SCENE_VARIANTS = [
   "casual walk through the city at dusk, relaxed pose, neon purple city lights in the background",
 ];
 
-export function buildKiraImagePrompt(): { prompt: string; negativePrompt: string } {
+// FLUX (в отличие от SDXL) не поддерживает negative_prompt — то, чего нужно
+// избегать, приходится формулировать как позитивное указание стиля.
+const FLUX_STYLE_CLAUSE =
+  "painterly digital illustration with soft cel shading and depth, not flat vector art, not a sticker or chibi cartoon";
+
+export interface KiraImagePrompt {
+  prompt: string;
+  negativePrompt: string;
+  fluxPrompt: string;
+}
+
+export function buildKiraImagePrompt(): KiraImagePrompt {
   const variant = SCENE_VARIANTS[Math.floor(Math.random() * SCENE_VARIANTS.length)];
+  const scenePart = `${CHARACTER_PROMPT}, ${variant}`;
   return {
-    prompt: `${QUALITY_PREFIX}, ${CHARACTER_PROMPT}, ${variant}, ${QUALITY_SUFFIX}`,
+    prompt: `${QUALITY_PREFIX}, ${scenePart}, ${QUALITY_SUFFIX}`,
     negativePrompt: NEGATIVE_PROMPT,
+    fluxPrompt: `${QUALITY_PREFIX}, ${scenePart}, ${FLUX_STYLE_CLAUSE}, ${QUALITY_SUFFIX}`,
   };
 }
