@@ -15,15 +15,15 @@ export function createCloudflareProvider(env: Env): AIProvider {
   return {
     name: "cloudflare",
     async generate(messages: ChatMessage[]): Promise<string> {
-      const model = env.AI_MODEL || "@cf/zai-org/glm-4.7-flash";
+      const model = env.AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
       const raw = await env.AI.run(model as keyof AiModels, {
         messages,
-        max_tokens: 800,
-        max_completion_tokens: 800,
+        max_tokens: 500,
+        max_completion_tokens: 500,
         temperature: 0.7,
-        // У reasoning-моделей часть токенов уходит на скрытые "раздумья" —
-        // держим их короткими, чтобы Кира отвечала быстро и не срезала себе
-        // сам ответ лимитом токенов.
+        // Если AI_MODEL переключат на reasoning-модель — часть токенов уйдёт
+        // на скрытые "раздумья"; держим их короткими, чтобы ответ не срезался
+        // лимитом токенов. Для обычных моделей поле просто игнорируется.
         reasoning_effort: "low",
       } as never);
 
