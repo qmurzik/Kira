@@ -31,7 +31,6 @@ export async function generateKiraPhoto(env: Env): Promise<ArrayBuffer> {
     ? await env.AI.run(model as keyof AiModels, {
         prompt: fluxPrompt,
         steps: 8,
-        seed: Math.floor(Math.random() * 1_000_000),
       } as never)
     : await env.AI.run(model as keyof AiModels, {
         prompt,
