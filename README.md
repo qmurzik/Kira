@@ -37,9 +37,14 @@ src/telegram/router.ts
 сервисах:
 
 1. **Cloudflare Workers AI** (`AI_PROVIDER=cloudflare`, по умолчанию) —
-   модель `@cf/meta/llama-3.1-8b-instruct` через биндинг `env.AI`. Бесплатна
-   в рамках дневного лимита нейронов Cloudflare, ключи не нужны, работает из
-   коробки сразу после `wrangler deploy`.
+   модель `@cf/zai-org/glm-4.7-flash` через биндинг `env.AI`: быстрая,
+   мультиязычная (100+ языков, включая русский), остаётся бесплатной на
+   Workers Free plan (в отличие от части моделей вроде Kimi K2, которые
+   Cloudflare перевёл на платный план). Ключи не нужны, работает из коробки
+   сразу после деплоя. Модели Workers AI периодически устаревают — если
+   `AI_MODEL` вернёт ошибку `5028 deprecated`, смотрите актуальный список на
+   [странице каталога](https://developers.cloudflare.com/workers-ai/models/)
+   и меняйте значение в `wrangler.toml`, без правок кода.
 2. **Groq** (`AI_PROVIDER=groq`) — запасной вариант с щедрым бесплатным
    тарифом (`llama-3.1-8b-instant`), нужен `GROQ_API_KEY`.
 3. **OpenRouter** (`AI_PROVIDER=openrouter`) — модели с суффиксом `:free`,

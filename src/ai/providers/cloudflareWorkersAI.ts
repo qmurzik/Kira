@@ -10,7 +10,7 @@ export function createCloudflareProvider(env: Env): AIProvider {
   return {
     name: "cloudflare",
     async generate(messages: ChatMessage[]): Promise<string> {
-      const model = env.AI_MODEL || "@cf/meta/llama-3.1-8b-instruct";
+      const model = env.AI_MODEL || "@cf/zai-org/glm-4.7-flash";
       const result = await env.AI.run(model as keyof AiModels, {
         messages,
         max_tokens: 512,
