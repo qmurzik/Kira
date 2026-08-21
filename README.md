@@ -104,25 +104,24 @@ official-formal. Описание и системный промпт — в `src
 
 ## Развёртывание
 
-Понадобится бесплатный аккаунт Cloudflare и Node.js 18+.
+Проект подключён к **Cloudflare Workers Builds** — деплой воркера `kira`
+происходит автоматически при пуше в эту ветку (Cloudflare сам выполняет
+`npx wrangler deploy`). Ресурсы уже созданы и прописаны в `wrangler.toml`:
 
-```bash
-npm install
-npx wrangler login
-```
+- Worker: `kira`
+- D1: `qmods-telegram-bot` (таблицы `users`, `chat_settings`, `error_log`
+  из `migrations/0001_init.sql` уже применены)
+- KV: `KIRA_KV`
+- R2 пока не подключён — на аккаунте не включён R2 (Cloudflare Dashboard →
+  R2 → Enable), биндинг в `wrangler.toml` закомментирован. Он и не
+  используется в коде сейчас, понадобится только для будущей базы знаний.
 
-### 1. Создать ресурсы Cloudflare
+Автодеплой поднимает **только сам Worker** — секреты и webhook он не
+настраивает, это разовые ручные шаги:
 
-```bash
-npx wrangler d1 create kira-db        # скопируйте database_id в wrangler.toml
-npx wrangler kv namespace create KIRA_KV   # скопируйте id в wrangler.toml
-npx wrangler r2 bucket create kira-assets
-```
-
-Вставьте полученные `database_id` и `id` вместо `REPLACE_WITH_...` в
-`wrangler.toml`.
-
-### 2. Секреты
+### 1. Секреты (Cloudflare Dashboard → Workers → kira → Settings →
+Variables and Secrets, либо `wrangler secret put`, если есть локальный доступ
+к аккаунту)
 
 ```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN        # токен от @BotFather
@@ -132,18 +131,21 @@ npx wrangler secret put GROQ_API_KEY
 npx wrangler secret put OPENROUTER_API_KEY
 ```
 
-### 3. Миграции, деплой, webhook — одной командой
+### 2. Регистрация webhook Telegram (один раз, после того как секреты заданы
+и первый деплой прошёл)
 
 ```bash
-cp .env.example .env   # заполните TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, WORKER_URL
-npm run setup:all
+cp .env.example .env   # впишите TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET,
+                        # WORKER_URL=https://kira.<ваш-поддомен>.workers.dev
+npm run setup:webhook
 ```
 
-Это применит миграции D1, задеплоит воркер и зарегистрирует webhook у
-Telegram. Либо по шагам:
+### Локальный CLI-путь (если нужен деплой не через git, а вручную)
 
 ```bash
-npm run db:migrate:remote
+npm install
+npx wrangler login
+npm run db:migrate:remote   # если меняли миграции — применит новые к qmods-telegram-bot
 npm run deploy
 npm run setup:webhook
 ```

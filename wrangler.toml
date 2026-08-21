@@ -1,4 +1,4 @@
-name = "kira-qmods-bot"
+name = "kira"
 main = "src/index.ts"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
@@ -23,19 +23,20 @@ binding = "AI"
 # ── D1: долговременная память (профили, настройки чатов) ───────────
 [[d1_databases]]
 binding = "DB"
-database_name = "kira-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_name = "qmods-telegram-bot"
+database_id = "b2c7e985-5e1e-42f1-a8e2-a5df52f0ec22"
 migrations_dir = "migrations"
 
 # ── KV: краткосрочная память диалогов + rate limiting ───────────────
 [[kv_namespaces]]
 binding = "KIRA_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "123524bd7acd461e8add70e138cd17a2"
 
-# ── R2: файлы/настройки/будущая база знаний (опционально) ──────────
-[[r2_buckets]]
-binding = "KIRA_ASSETS"
-bucket_name = "kira-assets"
+# ── R2 пока не подключён: на аккаунте не включён R2 (Cloudflare Dashboard →
+# R2 → Enable). Раскомментируйте после включения и `wrangler r2 bucket create kira-assets`.
+# [[r2_buckets]]
+# binding = "KIRA_ASSETS"
+# bucket_name = "kira-assets"
 
 # ── Периодическая очистка старой памяти (приватность) ───────────────
 [triggers]

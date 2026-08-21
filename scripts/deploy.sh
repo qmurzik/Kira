@@ -3,7 +3,7 @@
 set -euo pipefail
 
 echo "1/3 Применяю миграции D1..."
-npx wrangler d1 migrations apply kira-db --remote
+npx wrangler d1 migrations apply qmods-telegram-bot --remote
 
 echo "2/3 Деплою Worker..."
 npx wrangler deploy

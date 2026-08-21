@@ -2,7 +2,7 @@ export interface Env {
   // Bindings
   DB: D1Database;
   KIRA_KV: KVNamespace;
-  KIRA_ASSETS: R2Bucket;
+  // KIRA_ASSETS?: R2Bucket; — добавьте после включения R2 (см. wrangler.toml)
   AI: Ai;
 
   // Секреты (wrangler secret put ...)
