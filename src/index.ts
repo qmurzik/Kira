@@ -7,6 +7,13 @@ import { TelegramClient } from "./telegram/client";
 
 const ERROR_LOG_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней
 
+// Секрет, вставленный вручную в URL/дашборд, может обрасти пробелом или
+// переводом строки — сравниваем по обрезанному значению, чтобы не спотыкаться
+// об это на ровном месте.
+function normalizeSecret(value: string | null | undefined): string {
+  return (value ?? "").trim();
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -15,11 +22,12 @@ export default {
       return new Response("Кира на связи 💜", { status: 200 });
     }
 
-    const expectedPath = `/webhook/${env.TELEGRAM_WEBHOOK_SECRET}`;
+    const expectedSecret = normalizeSecret(env.TELEGRAM_WEBHOOK_SECRET);
+    const expectedPath = `/webhook/${expectedSecret}`;
     if (url.pathname === expectedPath && request.method === "POST") {
       // Доп. проверка секрета Telegram (см. setWebhook secret_token).
-      const secretHeader = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
-      if (secretHeader !== env.TELEGRAM_WEBHOOK_SECRET) {
+      const secretHeader = normalizeSecret(request.headers.get("X-Telegram-Bot-Api-Secret-Token"));
+      if (!expectedSecret || secretHeader !== expectedSecret) {
         return new Response("Forbidden", { status: 403 });
       }
 
@@ -42,15 +50,22 @@ export default {
     // куда-либо ещё: доступ к этому эндпоинту защищён тем же секретом, что
     // и сам webhook (его знает только владелец воркера, задавший секрет).
     if (url.pathname === "/setup-webhook" && request.method === "GET") {
-      const providedSecret = url.searchParams.get("secret");
-      if (providedSecret !== env.TELEGRAM_WEBHOOK_SECRET) {
+      const providedSecret = normalizeSecret(url.searchParams.get("secret"));
+      if (!expectedSecret || providedSecret !== expectedSecret) {
+        // Ничего секретного не логируем — только длины и служебный признак,
+        // чтобы можно было отличить "не тот секрет" от "лишний пробел/перенос строки".
+        await logError(
+          env,
+          "setup-webhook-forbidden",
+          `secret_configured=${Boolean(expectedSecret)} provided_len=${providedSecret.length} expected_len=${expectedSecret.length} raw_provided_len=${(url.searchParams.get("secret") ?? "").length}`,
+        );
         return new Response("Forbidden", { status: 403 });
       }
 
-      const webhookUrl = `${url.origin}/webhook/${env.TELEGRAM_WEBHOOK_SECRET}`;
+      const webhookUrl = `${url.origin}/webhook/${expectedSecret}`;
       try {
         const client = new TelegramClient(env);
-        await client.setWebhook(webhookUrl, env.TELEGRAM_WEBHOOK_SECRET);
+        await client.setWebhook(webhookUrl, expectedSecret);
         return new Response(`Webhook установлен: ${webhookUrl}`, { status: 200 });
       } catch (error) {
         await logError(env, "setup-webhook", error);
