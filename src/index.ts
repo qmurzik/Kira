@@ -4,6 +4,7 @@ import type { TgUpdate } from "./telegram/types";
 import { pruneErrorLog } from "./database/errorLog";
 import { logError } from "./database/errorLog";
 import { TelegramClient } from "./telegram/client";
+import { runPeriodicPhotos } from "./telegram/periodicPhotos";
 
 const ERROR_LOG_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней
 
@@ -84,6 +85,10 @@ export default {
       pruneErrorLog(env, ERROR_LOG_MAX_AGE_MS).catch((error) =>
         logError(env, "scheduled", error),
       ),
+    );
+    // Периодическая отправка фото Киры в чаты, где это включено (/settings photos on).
+    ctx.waitUntil(
+      runPeriodicPhotos(env).catch((error) => logError(env, "scheduled:photos", error)),
     );
   },
 };

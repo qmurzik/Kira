@@ -9,12 +9,14 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 AI_PROVIDER = "cloudflare"
 AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+KIRA_IMAGE_MODEL = "@cf/bytedance/stable-diffusion-xl-lightning"
 KIRA_TOPIC_NAME = "Кира AI"
 STRICT_TOPIC_ONLY = "false"
 RATE_LIMIT_PER_HOUR = "30"
 RESPONSE_DELAY_MS = "400"
 SHORT_TERM_LIMIT = "12"
 SHORT_TERM_TTL_SECONDS = "604800"
+PHOTO_AUTO_INTERVAL_HOURS = "72"
 
 # ── Workers AI (бесплатная модель по умолчанию) ─────────────────────
 [ai]

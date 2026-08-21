@@ -35,6 +35,25 @@ export class TelegramClient {
     });
   }
 
+  async sendPhoto(
+    chatId: number,
+    photo: ArrayBuffer,
+    options: SendMessageOptions & { caption?: string } = {},
+  ): Promise<void> {
+    const form = new FormData();
+    form.append("chat_id", String(chatId));
+    form.append("photo", new Blob([photo], { type: "image/png" }), "kira.png");
+    if (options.caption) form.append("caption", options.caption);
+    if (options.messageThreadId) form.append("message_thread_id", String(options.messageThreadId));
+    if (options.replyToMessageId) form.append("reply_to_message_id", String(options.replyToMessageId));
+
+    const res = await fetch(`${this.apiBase}/sendPhoto`, { method: "POST", body: form });
+    const data = (await res.json()) as { ok: boolean; description?: string };
+    if (!data.ok) {
+      throw new Error(`Telegram API sendPhoto ошибка: ${data.description ?? res.status}`);
+    }
+  }
+
   async sendChatAction(chatId: number, messageThreadId?: number): Promise<void> {
     await this.call("sendChatAction", {
       chat_id: chatId,

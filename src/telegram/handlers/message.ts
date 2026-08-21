@@ -8,17 +8,45 @@ import { loadContext, rememberSeen, rememberExchange } from "../../memory/manage
 import { isRateLimited } from "../middleware/rateLimit";
 import { logError } from "../../database/errorLog";
 import { getQmodsContextLine } from "../../qmods/context";
+import { getPendingConfirmation, clearPendingConfirmation } from "../pendingConfirm";
+import { executeConfirmedAction, requestDeviceUnlink } from "./deviceAction";
+import { handlePhotoRequest } from "./photo";
+import { isAffirmative, isDeviceUnlinkRequest, isPhotoRequest } from "../intents";
 
 /**
- * Основной обработчик сообщения, адресованного Кире: запрашивает контекст
- * памяти, зовёт AI-провайдера, отвечает с небольшой задержкой (чтобы не
- * выглядеть как спам-бот) и сохраняет обмен в память.
+ * Основной обработчик сообщения, адресованного Кире. Сначала разбирает
+ * особые случаи (подтверждение отложенного действия, запрос фото, запрос
+ * на отвязку устройства), а если ни один не подошёл — обычный AI-диалог:
+ * контекст памяти, AI-провайдер, задержка перед ответом, запись в память.
  */
 export async function handleAIMessage(env: Env, message: TgMessage): Promise<void> {
   const client = new TelegramClient(env);
   const userId = message.from?.id;
   const text = message.text?.trim();
   if (!userId || !text) return;
+
+  const pending = await getPendingConfirmation(env, message.chat.id, userId);
+  if (pending) {
+    if (isAffirmative(text)) {
+      await executeConfirmedAction(env, message, pending);
+    } else {
+      await clearPendingConfirmation(env, message.chat.id, userId);
+      await client.sendMessage(message.chat.id, "Хорошо, отменила 💜", {
+        messageThreadId: message.message_thread_id,
+      });
+    }
+    return;
+  }
+
+  if (isDeviceUnlinkRequest(text)) {
+    await requestDeviceUnlink(env, message);
+    return;
+  }
+
+  if (isPhotoRequest(text)) {
+    await handlePhotoRequest(env, message);
+    return;
+  }
 
   if (await isRateLimited(env, userId)) {
     return; // тихо игнорируем, чтобы не спамить и не жечь бесплатный лимит

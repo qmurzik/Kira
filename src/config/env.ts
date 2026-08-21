@@ -14,12 +14,14 @@ export interface Env {
   // Обычные переменные (wrangler.toml [vars])
   AI_PROVIDER: "cloudflare" | "groq" | "openrouter";
   AI_MODEL: string;
+  KIRA_IMAGE_MODEL: string;
   KIRA_TOPIC_NAME: string;
   STRICT_TOPIC_ONLY: string;
   RATE_LIMIT_PER_HOUR: string;
   RESPONSE_DELAY_MS: string;
   SHORT_TERM_LIMIT: string;
   SHORT_TERM_TTL_SECONDS: string;
+  PHOTO_AUTO_INTERVAL_HOURS: string;
 }
 
 export function numVar(value: string | undefined, fallback: number): number {

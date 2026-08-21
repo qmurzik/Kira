@@ -11,6 +11,8 @@ import { handleSettings } from "./commands/settings";
 import { handleClearMemory } from "./commands/clearMemory";
 import { handleLink } from "./commands/link";
 import { handleUnlink } from "./commands/unlink";
+import { handlePhotoCommand } from "./commands/photo";
+import { handleUnlinkDeviceCommand } from "./commands/unlinkDevice";
 import { logError } from "../database/errorLog";
 
 type CommandHandler = (env: Env, message: NonNullable<TgUpdate["message"]>, args: string[]) => Promise<void>;
@@ -23,6 +25,8 @@ const COMMANDS: Record<string, CommandHandler> = {
   "/clear_memory": (env, message) => handleClearMemory(env, message),
   "/link": (env, message, args) => handleLink(env, message, args),
   "/unlink": (env, message) => handleUnlink(env, message),
+  "/photo": (env, message) => handlePhotoCommand(env, message),
+  "/unlink_device": (env, message) => handleUnlinkDeviceCommand(env, message),
 };
 
 function parseCommand(text: string): { command: string; args: string[] } | null {

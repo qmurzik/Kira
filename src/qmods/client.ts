@@ -97,3 +97,7 @@ export async function qmodsGetSubscription(sessionToken: string): Promise<QmodsS
 export async function qmodsLogout(sessionToken: string): Promise<void> {
   await callApi("logout", { method: "POST", token: sessionToken }).catch(() => undefined);
 }
+
+export async function qmodsUnlinkDevice(sessionToken: string): Promise<void> {
+  await callApi("device/unlink", { method: "POST", token: sessionToken });
+}
