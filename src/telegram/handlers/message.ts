@@ -7,6 +7,7 @@ import { buildMessages } from "../../ai/promptBuilder";
 import { loadContext, rememberSeen, rememberExchange } from "../../memory/manager";
 import { isRateLimited } from "../middleware/rateLimit";
 import { logError } from "../../database/errorLog";
+import { getQmodsContextLine } from "../../qmods/context";
 
 /**
  * Основной обработчик сообщения, адресованного Кире: запрашивает контекст
@@ -29,8 +30,9 @@ export async function handleAIMessage(env: Env, message: TgMessage): Promise<voi
     await client.sendChatAction(message.chat.id, message.message_thread_id);
 
     const { profile, history } = await loadContext(env, message.chat.id, userId);
+    const qmodsContextLine = await getQmodsContextLine(env, userId).catch(() => null);
     const provider = getAIProvider(env);
-    const prompt = buildMessages(profile, history, text);
+    const prompt = buildMessages(profile, history, text, qmodsContextLine);
     const reply = await provider.generate(prompt);
 
     const delayMs = numVar(env.RESPONSE_DELAY_MS, 1500);

@@ -9,6 +9,8 @@ import { handleHelp } from "./commands/help";
 import { handleProfile } from "./commands/profile";
 import { handleSettings } from "./commands/settings";
 import { handleClearMemory } from "./commands/clearMemory";
+import { handleLink } from "./commands/link";
+import { handleUnlink } from "./commands/unlink";
 import { logError } from "../database/errorLog";
 
 type CommandHandler = (env: Env, message: NonNullable<TgUpdate["message"]>, args: string[]) => Promise<void>;
@@ -19,6 +21,8 @@ const COMMANDS: Record<string, CommandHandler> = {
   "/profile": (env, message) => handleProfile(env, message),
   "/settings": (env, message, args) => handleSettings(env, message, args),
   "/clear_memory": (env, message) => handleClearMemory(env, message),
+  "/link": (env, message, args) => handleLink(env, message, args),
+  "/unlink": (env, message) => handleUnlink(env, message),
 };
 
 function parseCommand(text: string): { command: string; args: string[] } | null {

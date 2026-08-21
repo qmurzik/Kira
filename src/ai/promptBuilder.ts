@@ -7,6 +7,7 @@ export function buildMessages(
   profile: UserProfile | null,
   history: ShortTermMessage[],
   userMessage: string,
+  qmodsContextLine: string | null = null,
 ): ChatMessage[] {
   const messages: ChatMessage[] = [{ role: "system", content: buildSystemPrompt() }];
 
@@ -21,6 +22,10 @@ export function buildMessages(
     if (notes.length > 0) {
       messages.push({ role: "system", content: notes.join(" ") });
     }
+  }
+
+  if (qmodsContextLine) {
+    messages.push({ role: "system", content: qmodsContextLine });
   }
 
   for (const item of history) {
