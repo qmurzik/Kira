@@ -1,0 +1,42 @@
+name = "kira-qmods-bot"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ── Переменные окружения (не секретные) ──────────────────────────────
+# Секреты (TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, ключи AI-провайдеров)
+# задаются через `wrangler secret put <NAME>` и сюда не попадают.
+[vars]
+AI_PROVIDER = "cloudflare"
+AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
+KIRA_TOPIC_NAME = "Кира AI"
+STRICT_TOPIC_ONLY = "false"
+RATE_LIMIT_PER_HOUR = "30"
+RESPONSE_DELAY_MS = "1500"
+SHORT_TERM_LIMIT = "12"
+SHORT_TERM_TTL_SECONDS = "604800"
+
+# ── Workers AI (бесплатная модель по умолчанию) ─────────────────────
+[ai]
+binding = "AI"
+
+# ── D1: долговременная память (профили, настройки чатов) ───────────
+[[d1_databases]]
+binding = "DB"
+database_name = "kira-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+# ── KV: краткосрочная память диалогов + rate limiting ───────────────
+[[kv_namespaces]]
+binding = "KIRA_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# ── R2: файлы/настройки/будущая база знаний (опционально) ──────────
+[[r2_buckets]]
+binding = "KIRA_ASSETS"
+bucket_name = "kira-assets"
+
+# ── Периодическая очистка старой памяти (приватность) ───────────────
+[triggers]
+crons = ["0 3 * * *"]

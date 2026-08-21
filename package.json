@@ -1,0 +1,24 @@
+{
+  "name": "kira-qmods-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Кира — AI-ассистент проекта QMODS в Telegram. Работает на Cloudflare Workers.",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "db:create": "wrangler d1 create kira-db",
+    "db:migrate:local": "wrangler d1 migrations apply kira-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply kira-db --remote",
+    "kv:create": "wrangler kv namespace create KIRA_KV",
+    "setup:webhook": "bash scripts/setup-webhook.sh",
+    "setup:all": "bash scripts/deploy.sh",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "typescript": "^5.5.4",
+    "wrangler": "^3.78.0"
+  }
+}
