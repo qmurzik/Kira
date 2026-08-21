@@ -8,8 +8,9 @@ export function buildMessages(
   history: ShortTermMessage[],
   userMessage: string,
   qmodsContextLine: string | null = null,
+  ambiguousAddressee = false,
 ): ChatMessage[] {
-  const messages: ChatMessage[] = [{ role: "system", content: buildSystemPrompt() }];
+  const messages: ChatMessage[] = [{ role: "system", content: buildSystemPrompt(ambiguousAddressee) }];
 
   if (profile) {
     const name = profile.firstName || profile.username;

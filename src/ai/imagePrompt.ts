@@ -5,6 +5,13 @@
  * похожий результат. Полная пиксельная консистентность лица недостижима
  * без файнтюнинга/img2img — честно предупреждаем об этом в README.
  */
+
+// Буст-теги в начале промпта — для SD/SDXL вес первых токенов выше,
+// это то, чего не хватало на SDXL-Lightning (дистиллированная модель,
+// фиксированные 4 шага диффузии — отсюда плоская, "векторная" картинка).
+const QUALITY_PREFIX =
+  "masterpiece, best quality, highly detailed, ultra-detailed, digital painting, anime illustration, official art, sharp focus, cinematic lighting, detailed background, intricate details";
+
 const CHARACTER_PROMPT = [
   "1girl, kira, original character, official mascot of tech brand QMODS",
   "anime style, young adult woman, short bob haircut with layered fringe",
@@ -18,14 +25,15 @@ const CHARACTER_PROMPT = [
   "dark accessories, cyberpunk gothic tech aesthetic, premium gaming brand character design",
 ].join(", ");
 
-const QUALITY_PROMPT =
-  "ultra detailed anime character illustration, high quality, detailed hair strands, detailed eyes, realistic lighting, beautiful shadows, professional character design, clean composition";
+const QUALITY_SUFFIX =
+  "detailed hair strands, detailed eyes, realistic lighting, beautiful shadows, professional character design, clean composition, 4k, trending on pixiv";
 
 const NEGATIVE_PROMPT = [
   "different character, different hairstyle, different eye color, realistic human face",
   "bad anatomy, extra fingers, distorted hands, extra limbs, deformed hands",
   "low quality, blurry, lowres, ugly face, wrong proportions, old appearance",
   "random clothes, different style, duplicate character, watermark, text, signature",
+  "flat colors, flat shading, vector art, sticker, chibi, cartoon, simple background, line art, monochrome, 3d render, plastic skin",
 ].join(", ");
 
 // Вариации позы/сцены между генерациями — по мотивам образов из брифа
@@ -43,7 +51,7 @@ const SCENE_VARIANTS = [
 export function buildKiraImagePrompt(): { prompt: string; negativePrompt: string } {
   const variant = SCENE_VARIANTS[Math.floor(Math.random() * SCENE_VARIANTS.length)];
   return {
-    prompt: `${CHARACTER_PROMPT}, ${variant}, ${QUALITY_PROMPT}`,
+    prompt: `${QUALITY_PREFIX}, ${CHARACTER_PROMPT}, ${variant}, ${QUALITY_SUFFIX}`,
     negativePrompt: NEGATIVE_PROMPT,
   };
 }

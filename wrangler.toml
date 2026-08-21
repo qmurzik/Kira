@@ -9,7 +9,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 AI_PROVIDER = "cloudflare"
 AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
-KIRA_IMAGE_MODEL = "@cf/bytedance/stable-diffusion-xl-lightning"
+KIRA_IMAGE_MODEL = "@cf/stabilityai/stable-diffusion-xl-base-1.0"
 KIRA_TOPIC_NAME = "Кира AI"
 STRICT_TOPIC_ONLY = "false"
 RATE_LIMIT_PER_HOUR = "30"

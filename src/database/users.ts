@@ -73,6 +73,41 @@ export async function setPreference(
     .run();
 }
 
+const MAX_PREFERENCE_KEYS = 24;
+
+/**
+ * Объединяет несколько новых фактов о пользователе за один проход
+ * (используется, когда модель сама заметила что-то новое в разговоре).
+ * Хранит не больше MAX_PREFERENCE_KEYS ключей — старые (по порядку
+ * добавления) вытесняются новыми, чтобы память не росла бесконечно.
+ */
+export async function mergePreferences(
+  env: Env,
+  userId: number,
+  updates: Record<string, string>,
+): Promise<void> {
+  if (Object.keys(updates).length === 0) return;
+
+  const profile = await getUserProfile(env, userId);
+  const prefs = profile ? safeParse(profile.preferencesJson) : {};
+
+  for (const [key, value] of Object.entries(updates)) {
+    delete prefs[key]; // переставляем в конец — считается "свежим"
+    prefs[key] = value;
+  }
+
+  const keys = Object.keys(prefs);
+  if (keys.length > MAX_PREFERENCE_KEYS) {
+    for (const staleKey of keys.slice(0, keys.length - MAX_PREFERENCE_KEYS)) {
+      delete prefs[staleKey];
+    }
+  }
+
+  await env.DB.prepare("UPDATE users SET preferences_json = ? WHERE user_id = ?")
+    .bind(JSON.stringify(prefs), userId)
+    .run();
+}
+
 export async function deleteUser(env: Env, userId: number): Promise<void> {
   await env.DB.prepare("DELETE FROM users WHERE user_id = ?").bind(userId).run();
 }

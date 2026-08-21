@@ -62,7 +62,10 @@ export async function routeUpdate(env: Env, update: TgUpdate): Promise<void> {
     const decision = await decideShouldRespond(env, message, botId, botUsername);
     if (!decision.shouldRespond) return;
 
-    await handleAIMessage(env, message);
+    // "kira_topic" — сообщение попало в её тему форума, но никто не позвал
+    // её напрямую; даём модели право решить, что оно не к ней (см. SKIP-протокол).
+    const ambiguousAddressee = decision.reason === "kira_topic";
+    await handleAIMessage(env, message, ambiguousAddressee);
   } catch (error) {
     await logError(env, "routeUpdate", error);
   }

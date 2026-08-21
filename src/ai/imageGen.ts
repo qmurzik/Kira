@@ -1,7 +1,12 @@
 import type { Env } from "../config/env";
 import { buildKiraImagePrompt } from "./imagePrompt";
 
-const DEFAULT_IMAGE_MODEL = "@cf/bytedance/stable-diffusion-xl-lightning";
+// SDXL-Lightning жертвует качеством ради скорости (мало шагов диффузии) —
+// для стилизованной анимной иллюстрации выходит плоско. Полный SDXL base
+// с бОльшим числом шагов даёт заметно детальнее результат, тоже $0.00/шаг
+// (действительно бесплатен), просто чуть медленнее — это не критично, всё
+// выполняется в фоне (ctx.waitUntil).
+const DEFAULT_IMAGE_MODEL = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
 
 /**
  * Генерирует изображение Киры через Workers AI (бесплатная модель по
@@ -10,6 +15,9 @@ const DEFAULT_IMAGE_MODEL = "@cf/bytedance/stable-diffusion-xl-lightning";
  *
  * ВАЖНО: без LoRA/референс-изображения консистентность внешности между
  * генерациями не гарантирована — только общий стиль по фиксированному промпту.
+ * Ни одна бесплатная модель Workers AI не даёт уровня детализации, как у
+ * генераторов вроде DALL·E/GPT-Image — на бесплатном каталоге Cloudflare
+ * нет анимной LoRA/чекпоинта, только базовый SDXL.
  */
 export async function generateKiraPhoto(env: Env): Promise<ArrayBuffer> {
   const model = env.KIRA_IMAGE_MODEL || DEFAULT_IMAGE_MODEL;
@@ -20,6 +28,7 @@ export async function generateKiraPhoto(env: Env): Promise<ArrayBuffer> {
     negative_prompt: negativePrompt,
     height: 1024,
     width: 1024,
+    num_steps: 20,
   } as never);
 
   return await toArrayBuffer(raw);

@@ -5,6 +5,7 @@ import type { TgMessage } from "../types";
 import { getAIProvider } from "../../ai";
 import { buildMessages } from "../../ai/promptBuilder";
 import { loadContext, rememberSeen, rememberExchange } from "../../memory/manager";
+import { mergePreferences } from "../../database/users";
 import { isRateLimited } from "../middleware/rateLimit";
 import { logError } from "../../database/errorLog";
 import { getQmodsContextLine } from "../../qmods/context";
@@ -12,14 +13,23 @@ import { getPendingConfirmation, clearPendingConfirmation } from "../pendingConf
 import { executeConfirmedAction, requestDeviceUnlink } from "./deviceAction";
 import { handlePhotoRequest } from "./photo";
 import { isAffirmative, isDeviceUnlinkRequest, isPhotoRequest } from "../intents";
+import { parseKiraReply } from "../../ai/replyParsing";
 
 /**
  * Основной обработчик сообщения, адресованного Кире. Сначала разбирает
  * особые случаи (подтверждение отложенного действия, запрос фото, запрос
  * на отвязку устройства), а если ни один не подошёл — обычный AI-диалог:
  * контекст памяти, AI-провайдер, задержка перед ответом, запись в память.
+ *
+ * @param ambiguousAddressee — сообщение попало в тему Киры "по умолчанию",
+ *   без прямого обращения; модель сама решает, отвечать ли (см. SKIP-протокол
+ *   в src/ai/replyParsing.ts и src/config/character.ts).
  */
-export async function handleAIMessage(env: Env, message: TgMessage): Promise<void> {
+export async function handleAIMessage(
+  env: Env,
+  message: TgMessage,
+  ambiguousAddressee = false,
+): Promise<void> {
   const client = new TelegramClient(env);
   const userId = message.from?.id;
   const text = message.text?.trim();
@@ -60,20 +70,29 @@ export async function handleAIMessage(env: Env, message: TgMessage): Promise<voi
     const { profile, history } = await loadContext(env, message.chat.id, userId);
     const qmodsContextLine = await getQmodsContextLine(env, userId).catch(() => null);
     const provider = getAIProvider(env);
-    const prompt = buildMessages(profile, history, text, qmodsContextLine);
-    const reply = await provider.generate(prompt);
+    const prompt = buildMessages(profile, history, text, qmodsContextLine, ambiguousAddressee);
+    const rawReply = await provider.generate(prompt);
+    const { skip, visibleText, note } = parseKiraReply(rawReply);
+
+    if (note) {
+      await mergePreferences(env, userId, note).catch((error) => logError(env, "mergePreferences", error));
+    }
+
+    if (skip || !visibleText) {
+      return; // модель решила, что обращались не к ней — молчим
+    }
 
     const delayMs = numVar(env.RESPONSE_DELAY_MS, 1500);
     if (delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
 
-    await client.sendMessage(message.chat.id, reply, {
+    await client.sendMessage(message.chat.id, visibleText, {
       messageThreadId: message.message_thread_id,
       replyToMessageId: message.message_id,
     });
 
-    await rememberExchange(env, message.chat.id, userId, text, reply);
+    await rememberExchange(env, message.chat.id, userId, text, visibleText);
   } catch (error) {
     await logError(env, "handleAIMessage", error);
     await client
