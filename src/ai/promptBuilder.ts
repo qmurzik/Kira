@@ -9,8 +9,11 @@ export function buildMessages(
   userMessage: string,
   qmodsContextLine: string | null = null,
   ambiguousAddressee = false,
+  isOwner = false,
 ): ChatMessage[] {
-  const messages: ChatMessage[] = [{ role: "system", content: buildSystemPrompt(ambiguousAddressee) }];
+  const messages: ChatMessage[] = [
+    { role: "system", content: buildSystemPrompt(ambiguousAddressee, isOwner) },
+  ];
 
   if (profile) {
     const name = profile.firstName || profile.username;

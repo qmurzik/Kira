@@ -17,6 +17,9 @@ RESPONSE_DELAY_MS = "400"
 SHORT_TERM_LIMIT = "12"
 SHORT_TERM_TTL_SECONDS = "604800"
 PHOTO_AUTO_INTERVAL_HOURS = "72"
+OWNER_TELEGRAM_ID = "5110155633"
+PROACTIVE_MESSAGE_PROBABILITY = "0.4"
+PROACTIVE_MESSAGE_MIN_GAP_HOURS = "6"
 
 # ── Workers AI (бесплатная модель по умолчанию) ─────────────────────
 [ai]
@@ -40,6 +43,8 @@ id = "123524bd7acd461e8add70e138cd17a2"
 # binding = "KIRA_ASSETS"
 # bucket_name = "kira-assets"
 
-# ── Периодическая очистка старой памяти (приватность) ───────────────
+# ── Cron: ежедневная гигиена (03:00 UTC) + несколько срабатываний в день
+# (07:00-20:00 UTC ≈ 10:00-23:00 MSK) для шанса, что Кира сама напишет
+# создателю первой (см. src/telegram/proactiveMessages.ts).
 [triggers]
-crons = ["0 3 * * *"]
+crons = ["0 3 * * *", "0 7-20/3 * * *"]

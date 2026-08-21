@@ -14,6 +14,7 @@ import { executeConfirmedAction, requestDeviceUnlink } from "./deviceAction";
 import { handlePhotoRequest } from "./photo";
 import { isAffirmative, isDeviceUnlinkRequest, isPhotoRequest } from "../intents";
 import { parseKiraReply } from "../../ai/replyParsing";
+import { isOwnerId } from "../../config/owner";
 
 /**
  * Основной обработчик сообщения, адресованного Кире. Сначала разбирает
@@ -69,8 +70,11 @@ export async function handleAIMessage(
 
     const { profile, history } = await loadContext(env, message.chat.id, userId);
     const qmodsContextLine = await getQmodsContextLine(env, userId).catch(() => null);
+    // Особый тон — только в личке с создателем, не при обращениях в группе,
+    // чтобы это не выглядело странно на глазах остального сообщества.
+    const isOwner = message.chat.type === "private" && isOwnerId(env, userId);
     const provider = getAIProvider(env);
-    const prompt = buildMessages(profile, history, text, qmodsContextLine, ambiguousAddressee);
+    const prompt = buildMessages(profile, history, text, qmodsContextLine, ambiguousAddressee, isOwner);
     const rawReply = await provider.generate(prompt);
     const { skip, visibleText, note } = parseKiraReply(rawReply);
 

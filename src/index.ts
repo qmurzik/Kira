@@ -5,8 +5,10 @@ import { pruneErrorLog } from "./database/errorLog";
 import { logError } from "./database/errorLog";
 import { TelegramClient } from "./telegram/client";
 import { runPeriodicPhotos } from "./telegram/periodicPhotos";
+import { runProactiveMessage } from "./telegram/proactiveMessages";
 
 const ERROR_LOG_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней
+const DAILY_MAINTENANCE_CRON = "0 3 * * *";
 
 // Секрет, вставленный вручную в URL/дашборд, может обрасти пробелом или
 // переводом строки — сравниваем по обрезанному значению, чтобы не спотыкаться
@@ -78,17 +80,26 @@ export default {
     return new Response("Not Found", { status: 404 });
   },
 
-  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    // Ежедневная гигиена: чистим старый лог ошибок.
-    // Короткая память в KV самоочищается через TTL, долговременная — по /clear_memory.
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    if (event.cron === DAILY_MAINTENANCE_CRON) {
+      // Ежедневная гигиена: чистим старый лог ошибок.
+      // Короткая память в KV самоочищается через TTL, долговременная — по /clear_memory.
+      ctx.waitUntil(
+        pruneErrorLog(env, ERROR_LOG_MAX_AGE_MS).catch((error) =>
+          logError(env, "scheduled", error),
+        ),
+      );
+      // Периодическая отправка фото Киры в чаты, где это включено (/settings photos on).
+      ctx.waitUntil(
+        runPeriodicPhotos(env).catch((error) => logError(env, "scheduled:photos", error)),
+      );
+      return;
+    }
+
+    // Остальные срабатывания (несколько раз в день) — шанс, что Кира сама
+    // напишет создателю первой, без повода (см. src/telegram/proactiveMessages.ts).
     ctx.waitUntil(
-      pruneErrorLog(env, ERROR_LOG_MAX_AGE_MS).catch((error) =>
-        logError(env, "scheduled", error),
-      ),
-    );
-    // Периодическая отправка фото Киры в чаты, где это включено (/settings photos on).
-    ctx.waitUntil(
-      runPeriodicPhotos(env).catch((error) => logError(env, "scheduled:photos", error)),
+      runProactiveMessage(env).catch((error) => logError(env, "scheduled:proactive", error)),
     );
   },
 };

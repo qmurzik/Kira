@@ -22,6 +22,12 @@ export interface Env {
   SHORT_TERM_LIMIT: string;
   SHORT_TERM_TTL_SECONDS: string;
   PHOTO_AUTO_INTERVAL_HOURS: string;
+
+  // Создатель Киры — особый тон общения (только в личке) + она сама
+  // иногда пишет ему первой.
+  OWNER_TELEGRAM_ID: string;
+  PROACTIVE_MESSAGE_PROBABILITY: string;
+  PROACTIVE_MESSAGE_MIN_GAP_HOURS: string;
 }
 
 export function numVar(value: string | undefined, fallback: number): number {
