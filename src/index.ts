@@ -3,6 +3,7 @@ import { routeUpdate } from "./telegram/router";
 import type { TgUpdate } from "./telegram/types";
 import { pruneErrorLog } from "./database/errorLog";
 import { logError } from "./database/errorLog";
+import { TelegramClient } from "./telegram/client";
 
 const ERROR_LOG_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней
 
@@ -35,6 +36,27 @@ export default {
         routeUpdate(env, update).catch((error) => logError(env, "fetch:webhook", error)),
       );
       return new Response("OK", { status: 200 });
+    }
+
+    // Разовая регистрация webhook без необходимости передавать токен бота
+    // куда-либо ещё: доступ к этому эндпоинту защищён тем же секретом, что
+    // и сам webhook (его знает только владелец воркера, задавший секрет).
+    if (url.pathname === "/setup-webhook" && request.method === "GET") {
+      const providedSecret = url.searchParams.get("secret");
+      if (providedSecret !== env.TELEGRAM_WEBHOOK_SECRET) {
+        return new Response("Forbidden", { status: 403 });
+      }
+
+      const webhookUrl = `${url.origin}/webhook/${env.TELEGRAM_WEBHOOK_SECRET}`;
+      try {
+        const client = new TelegramClient(env);
+        await client.setWebhook(webhookUrl, env.TELEGRAM_WEBHOOK_SECRET);
+        return new Response(`Webhook установлен: ${webhookUrl}`, { status: 200 });
+      } catch (error) {
+        await logError(env, "setup-webhook", error);
+        const message = error instanceof Error ? error.message : String(error);
+        return new Response(`Ошибка установки webhook: ${message}`, { status: 500 });
+      }
     }
 
     return new Response("Not Found", { status: 404 });
