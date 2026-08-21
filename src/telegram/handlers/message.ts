@@ -1,5 +1,4 @@
 import type { Env } from "../../config/env";
-import { numVar } from "../../config/env";
 import { TelegramClient } from "../client";
 import type { TgMessage } from "../types";
 import { getAIProvider } from "../../ai";
@@ -15,6 +14,7 @@ import { handlePhotoRequest } from "./photo";
 import { isAffirmative, isDeviceUnlinkRequest, isPhotoRequest } from "../intents";
 import { parseKiraReply } from "../../ai/replyParsing";
 import { isOwnerId } from "../../config/owner";
+import { humanDelayMs, splitIntoBubbles } from "../humanize";
 
 /**
  * Основной обработчик сообщения, адресованного Кире. Сначала разбирает
@@ -86,15 +86,21 @@ export async function handleAIMessage(
       return; // модель решила, что обращались не к ней — молчим
     }
 
-    const delayMs = numVar(env.RESPONSE_DELAY_MS, 1500);
-    if (delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    // Иногда шлём длинный ответ парой сообщений подряд + разброс задержки —
+    // меньше похоже на бота с фиксированным таймером.
+    for (const [i, bubble] of splitIntoBubbles(visibleText).entries()) {
+      const delayMs = humanDelayMs(env);
+      if (delayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+      if (i > 0) {
+        await client.sendChatAction(message.chat.id, message.message_thread_id).catch(() => undefined);
+      }
+      await client.sendMessage(message.chat.id, bubble, {
+        messageThreadId: message.message_thread_id,
+        replyToMessageId: i === 0 ? message.message_id : undefined,
+      });
     }
-
-    await client.sendMessage(message.chat.id, visibleText, {
-      messageThreadId: message.message_thread_id,
-      replyToMessageId: message.message_id,
-    });
 
     await rememberExchange(env, message.chat.id, userId, text, visibleText);
   } catch (error) {

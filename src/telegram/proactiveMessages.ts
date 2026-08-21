@@ -8,6 +8,7 @@ import { PROACTIVE_MESSAGE_TRIGGER } from "../config/character";
 import { loadContext, rememberExchange } from "../memory/manager";
 import { mergePreferences } from "../database/users";
 import { logError } from "../database/errorLog";
+import { humanDelayMs, splitIntoBubbles } from "./humanize";
 
 const LAST_SENT_KV_KEY = "kira:proactive:last-sent";
 
@@ -42,7 +43,13 @@ export async function runProactiveMessage(env: Env): Promise<void> {
     }
     if (skip || !visibleText) return;
 
-    await client.sendMessage(ownerId, visibleText);
+    for (const [i, bubble] of splitIntoBubbles(visibleText).entries()) {
+      const delayMs = humanDelayMs(env);
+      if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+      if (i > 0) await client.sendChatAction(ownerId).catch(() => undefined);
+      await client.sendMessage(ownerId, bubble);
+    }
+
     await rememberExchange(env, ownerId, ownerId, PROACTIVE_MESSAGE_TRIGGER, visibleText);
     await env.KIRA_KV.put(LAST_SENT_KV_KEY, String(Date.now()));
   } catch (error) {
