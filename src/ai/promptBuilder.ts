@@ -1,15 +1,21 @@
 import { buildSystemPrompt } from "../config/character";
-import type { ChatMessage } from "./types";
-import type { UserProfile } from "../database/users";
-import type { ShortTermMessage } from "../memory/shortTerm";
+import type { ChatMessage, ChatRole } from "./types";
+import { safeParse, type UserProfile } from "../database/users";
+
+interface HistoryEntry {
+  role: ChatRole;
+  content: string;
+  speakerName?: string;
+}
 
 export function buildMessages(
   profile: UserProfile | null,
-  history: ShortTermMessage[],
+  history: HistoryEntry[],
   userMessage: string,
   qmodsContextLine: string | null = null,
   ambiguousAddressee = false,
   isOwner = false,
+  participantsNote: string | null = null,
 ): ChatMessage[] {
   const messages: ChatMessage[] = [
     { role: "system", content: buildSystemPrompt(ambiguousAddressee, isOwner) },
@@ -17,7 +23,7 @@ export function buildMessages(
 
   if (profile) {
     const name = profile.firstName || profile.username;
-    const prefs = safeParsePreferences(profile.preferencesJson);
+    const prefs = safeParse(profile.preferencesJson);
     const notes: string[] = [];
     if (name) notes.push(`Имя пользователя: ${name}.`);
     if (Object.keys(prefs).length > 0) {
@@ -32,19 +38,17 @@ export function buildMessages(
     messages.push({ role: "system", content: qmodsContextLine });
   }
 
+  if (participantsNote) {
+    messages.push({ role: "system", content: participantsNote });
+  }
+
   for (const item of history) {
-    messages.push({ role: item.role, content: item.content });
+    // В групповой истории перед репликами участников стоит их имя
+    // ("Аня: текст") — так модель различает, кто что сказал в общем чате.
+    const content = item.role === "user" && item.speakerName ? `${item.speakerName}: ${item.content}` : item.content;
+    messages.push({ role: item.role, content });
   }
 
   messages.push({ role: "user", content: userMessage });
   return messages;
-}
-
-function safeParsePreferences(json: string): Record<string, unknown> {
-  try {
-    const parsed = JSON.parse(json);
-    return typeof parsed === "object" && parsed !== null ? parsed : {};
-  } catch {
-    return {};
-  }
 }

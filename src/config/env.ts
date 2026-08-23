@@ -22,6 +22,7 @@ export interface Env {
   SHORT_TERM_LIMIT: string;
   SHORT_TERM_TTL_SECONDS: string;
   PHOTO_AUTO_INTERVAL_HOURS: string;
+  GROUP_HISTORY_LIMIT: string;
 
   // Создатель Киры — особый тон общения (только в личке) + она сама
   // иногда пишет ему первой.

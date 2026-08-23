@@ -4,7 +4,13 @@ import type { TgMessage } from "../types";
 import { getAIProvider } from "../../ai";
 import { buildMessages } from "../../ai/promptBuilder";
 import { loadContext, rememberSeen, rememberExchange } from "../../memory/manager";
-import { mergePreferences } from "../../database/users";
+import { getUserProfile, mergePreferences } from "../../database/users";
+import {
+  getGroupHistory,
+  appendGroupUserMessage,
+  appendGroupAssistantMessage,
+} from "../../memory/groupHistory";
+import { buildParticipantsNote } from "../../ai/participants";
 import { isRateLimited } from "../middleware/rateLimit";
 import { logError } from "../../database/errorLog";
 import { getQmodsContextLine } from "../../qmods/context";
@@ -16,11 +22,19 @@ import { parseKiraReply } from "../../ai/replyParsing";
 import { isOwnerId } from "../../config/owner";
 import { humanDelayMs, splitIntoBubbles } from "../humanize";
 
+function speakerDisplayName(message: TgMessage): string {
+  return message.from?.first_name || message.from?.username || "Кто-то";
+}
+
 /**
  * Основной обработчик сообщения, адресованного Кире. Сначала разбирает
  * особые случаи (подтверждение отложенного действия, запрос фото, запрос
  * на отвязку устройства), а если ни один не подошёл — обычный AI-диалог:
  * контекст памяти, AI-провайдер, задержка перед ответом, запись в память.
+ *
+ * В группах используется общая память на тему форума (не приватная на
+ * каждого пользователя) — иначе Кира не видела бы разговор нескольких
+ * участников между собой, только свой диалог с каждым по отдельности.
  *
  * @param ambiguousAddressee — сообщение попало в тему Киры "по умолчанию",
  *   без прямого обращения; модель сама решает, отвечать ли (см. SKIP-протокол
@@ -65,16 +79,55 @@ export async function handleAIMessage(
 
   await rememberSeen(env, userId, message.from?.username ?? null, message.from?.first_name ?? null);
 
-  try {
-    await client.sendChatAction(message.chat.id, message.message_thread_id);
+  const isGroup = message.chat.type !== "private";
+  const threadId = message.message_thread_id;
+  const speakerName = speakerDisplayName(message);
 
-    const { profile, history } = await loadContext(env, message.chat.id, userId);
+  if (isGroup) {
+    // Записываем реплику сразу — даже если Кира решит промолчать (SKIP),
+    // она должна помнить, что было сказано в теме. Не даём сбою записи
+    // сорвать сам ответ пользователю.
+    await appendGroupUserMessage(env, message.chat.id, threadId, userId, speakerName, text).catch(
+      (error) => logError(env, "appendGroupUserMessage", error),
+    );
+  }
+
+  try {
+    await client.sendChatAction(message.chat.id, threadId);
+
     const qmodsContextLine = await getQmodsContextLine(env, userId).catch(() => null);
     // Особый тон — только в личке с создателем, не при обращениях в группе,
     // чтобы это не выглядело странно на глазах остального сообщества.
-    const isOwner = message.chat.type === "private" && isOwnerId(env, userId);
+    const isOwner = !isGroup && isOwnerId(env, userId);
     const provider = getAIProvider(env);
-    const prompt = buildMessages(profile, history, text, qmodsContextLine, ambiguousAddressee, isOwner);
+
+    let profile;
+    let history;
+    let participantsNote: string | null = null;
+    let userMessageForPrompt = text;
+
+    if (isGroup) {
+      profile = await getUserProfile(env, userId);
+      const groupHistory = await getGroupHistory(env, message.chat.id, threadId);
+      // Последняя запись — только что добавленная реплика этого же пользователя, не нужна как "прошлая история".
+      history = groupHistory.slice(0, -1);
+      participantsNote = await buildParticipantsNote(env, history, userId).catch(() => null);
+      userMessageForPrompt = `${speakerName}: ${text}`;
+    } else {
+      const context = await loadContext(env, message.chat.id, userId);
+      profile = context.profile;
+      history = context.history;
+    }
+
+    const prompt = buildMessages(
+      profile,
+      history,
+      userMessageForPrompt,
+      qmodsContextLine,
+      ambiguousAddressee,
+      isOwner,
+      participantsNote,
+    );
     const rawReply = await provider.generate(prompt);
     const { skip, visibleText, note } = parseKiraReply(rawReply);
 
@@ -94,22 +147,26 @@ export async function handleAIMessage(
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
       if (i > 0) {
-        await client.sendChatAction(message.chat.id, message.message_thread_id).catch(() => undefined);
+        await client.sendChatAction(message.chat.id, threadId).catch(() => undefined);
       }
       await client.sendMessage(message.chat.id, bubble, {
-        messageThreadId: message.message_thread_id,
+        messageThreadId: threadId,
         replyToMessageId: i === 0 ? message.message_id : undefined,
       });
     }
 
-    await rememberExchange(env, message.chat.id, userId, text, visibleText);
+    if (isGroup) {
+      await appendGroupAssistantMessage(env, message.chat.id, threadId, visibleText);
+    } else {
+      await rememberExchange(env, message.chat.id, userId, text, visibleText);
+    }
   } catch (error) {
     await logError(env, "handleAIMessage", error);
     await client
       .sendMessage(
         message.chat.id,
         "Что-то пошло не так на моей стороне 💜 Попробуй ещё раз чуть позже.",
-        { messageThreadId: message.message_thread_id },
+        { messageThreadId: threadId },
       )
       .catch(() => undefined);
   }

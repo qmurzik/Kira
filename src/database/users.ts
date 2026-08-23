@@ -112,7 +112,7 @@ export async function deleteUser(env: Env, userId: number): Promise<void> {
   await env.DB.prepare("DELETE FROM users WHERE user_id = ?").bind(userId).run();
 }
 
-function safeParse(json: string): Record<string, unknown> {
+export function safeParse(json: string): Record<string, unknown> {
   try {
     const parsed = JSON.parse(json);
     return typeof parsed === "object" && parsed !== null ? parsed : {};
