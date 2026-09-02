@@ -32,21 +32,27 @@ KiraPvP/
 
 ## Building
 
-Requirements for a **real** build (see "Why this could not be built here"
-below for why none of this is available in the sandbox this was authored in):
+**Verified building, not just written**: `.github/workflows/build-kirapvp.yml`
+builds this project on every push via GitHub Actions (Temurin JDK 8 on
+`ubuntu-latest`, `./gradlew build`, jar uploaded as the `KiraPvP-jar`
+artifact). The sandbox this mod was originally authored in has neither a
+JDK 8 nor network access to Mojang/Forge's servers (see "Local sandbox
+build limitation" below), so CI is the actual proof this compiles - see
+its run history for the green build and the produced jar.
+
+To build locally on a normal dev machine:
 
 - JDK 8 (ForgeGradle 2.1 does not run on JDK 9+)
-- Unrestricted internet access to `maven.minecraftforge.net`,
-  `libraries.minecraft.net` and Mojang's launcher-meta/asset servers
-  (ForgeGradle downloads Minecraft, Forge's userdev artifacts and MCP
-  mappings on first run)
+- Internet access to `maven.minecraftforge.net`, `libraries.minecraft.net`
+  and Mojang's launcher-meta/asset servers (ForgeGradle downloads
+  Minecraft, Forge's userdev artifacts and MCP mappings on first run)
 
 ```bash
 cd KiraPvP
 ./gradlew build
 ```
 
-The compiled mod jar will be produced at `build/libs/KiraPvP-1.0.0.jar`.
+The compiled mod jar will be produced at `build/libs/KiraPvP-1.0.1.jar`.
 
 To run a dev client for manual testing (ClickGUI, Freelook, HUD, config
 round-trip, reconnect/world-change behavior):
@@ -131,32 +137,10 @@ perfectly smooth. No ASM, no mixins, no reflection into private fields.
   `Zoom` are also unregistered from Forge's event buses on disable, so a
   disabled module costs nothing until re-enabled.
 
-## Known limitations / please verify on a real MCP-mapped checkout
+## Local sandbox build limitation (why CI, not a local run, is the proof)
 
-This project was written and reviewed in a sandboxed environment with
-**no internet access to Mojang/Forge's servers and no JDK 8 available**
-(see below) - so it could not be compiled against the actual `stable_22`
-MCP mappings. Everything above compiles against my best-confidence
-recollection of 1.8.9's field/method names, but a few call sites are worth
-double-checking against the real deobfuscated sources on first build:
-
-- `EntityPlayerSP.sendQueue` (network handler field, used by
-  `PingDisplayModule`) - name changed to `connection` in later MC versions;
-  1.8.9 should still be `sendQueue`, but confirm.
-- `GameSettings.clouds` (`int`, tri-state), `.ambientOcclusion` (`int`),
-  `.particleSetting` (`int`), `.fancyGraphics` (`boolean`) in
-  `PerformanceModule` - field types are correct for this era to the best
-  of my knowledge, but worth a quick compiler check.
-- `net.minecraftforge.fml.*` package root is correct for 1.8+ Forge (as
-  opposed to `cpw.mods.fml` used through 1.7.10).
-
-None of these, if wrong, require any design change - they're one-line
-fixes an IDE will flag immediately once the real Minecraft/Forge jars are
-on the classpath.
-
-## Why this could not be built or run in this sandbox
-
-Verified directly, not assumed:
+The environment this mod was originally authored in has neither a JDK 8
+nor network access to Mojang/Forge's servers:
 
 1. **No JDK 8.** Only JDK 21 is installed. ForgeGradle 2.1 (required for
    MC 1.8.9) crashes immediately under it:
@@ -164,17 +148,54 @@ Verified directly, not assumed:
    version ForgeGradle 2.1 needs, cannot parse a JDK 9+ version string).
 2. **Network policy blocks Mojang/Forge's servers.** `maven.minecraftforge.net`,
    `libraries.minecraft.net` and `launchermeta.mojang.com` are all
-   rejected by this environment's egress proxy (`connect_rejected` /
+   rejected by that environment's egress proxy (`connect_rejected` /
    `403 Forbidden`), which are exactly the servers ForgeGradle needs to
    fetch Minecraft, Forge's userdev artifacts and MCP mappings.
 
-Both are independently sufficient to block a real build; together they
-make it certain. This is reported here rather than papered over - the
-project is otherwise a complete, real (non-pseudocode) source tree ready
-to build the moment it's opened on a normal Forge 1.8.9 dev machine.
+Both are independently sufficient to block a build there; neither applies
+to a GitHub Actions runner (or a normal dev machine), which is why the
+build lives in CI - see `.github/workflows/build-kirapvp.yml` and its run
+history for the actual green build and jar.
+
+### Real compiler feedback the sandbox couldn't give (fixed against ground truth, not memory)
+
+The first few CI runs did fail, and every fix below came from reading the
+actual compiler output or the actual downloaded `forgeBin` jar, not from
+re-guessing:
+
+- ForgeGradle 2.1's plugin id is `net.minecraftforge.gradle.forge`, not the
+  legacy short alias `forge` (the resolved `2.1-20211118` snapshot rebuild
+  doesn't register the alias).
+- Passing a field to `super(...)` in its own initializer doesn't compile
+  (JLS: field initializers run after the superclass constructor returns) -
+  `FreelookModule`, `ZoomModule` and `PerformanceModule` now build their
+  settings as constructor parameters instead.
+- `(float) someSliderSetting.getValue()` doesn't compile: casting a boxed
+  `Double` straight to `float` needs unboxing *then* a narrowing
+  conversion, and a single cast only composes unboxing with a *widening*
+  conversion (JLS 5.5). Fixed with `.getValue().floatValue()`.
+- `PlayerEvent.PlayerRespawnEvent` doesn't exist under
+  `net.minecraftforge.event.entity.player.PlayerEvent` - it's nested under
+  a *different*, legacy `net.minecraftforge.fml.common.gameevent.PlayerEvent`
+  that happens to share the simple name. Confirmed by unzipping the actual
+  `forgeBin-1.8.9-11.15.1.2318-1.8.9.jar` and listing its `PlayerEvent*`
+  entries.
+- `GuiScreen`'s mouse-release hook is `mouseReleased(int, int, int)` -
+  there is no `mouseMovedOrUp` in 1.8.9. Confirmed by running `javap` on
+  the actual decompiled-mapping `GuiScreen.class` from that same jar.
+
+Everything else guessed from memory in the initial pass - `EntityPlayerSP
+.sendQueue`, `GameSettings.clouds`/`.ambientOcclusion`/`.particleSetting`/
+`.fancyGraphics`, `Potion.potionTypes`, `NetworkPlayerInfo
+.getResponseTime()`, every other Forge event class used - compiled clean
+on the first real attempt.
 
 ## Changelog
 
+- **1.0.1** - fixed the 12 real compile errors surfaced by the first
+  GitHub Actions runs (ForgeGradle plugin id, three constructor-ordering
+  bugs, two Double-to-float casts, a wrong `PlayerEvent` import, a
+  nonexistent `GuiScreen` override); CI is green and produces a jar.
 - **1.0.0** - initial implementation: Freelook, Zoom, full HUD (FPS/CPS/
   Coordinates/Ping/Keystrokes), Armor Status, Potion Timers, Performance
   mode, ClickGUI, debounced JSON config, custom keybind system.
