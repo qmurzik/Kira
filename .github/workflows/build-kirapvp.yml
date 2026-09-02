@@ -48,7 +48,11 @@ jobs:
         run: ./gradlew build --stacktrace --no-daemon
 
       - name: List jar contents
-        run: unzip -l build/libs/*.jar
+        run: |
+          for f in build/libs/*.jar; do
+            echo "=== $f ==="
+            unzip -l "$f"
+          done
 
       - name: Upload built jar
         if: success()
