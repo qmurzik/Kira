@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "kirapvp",
+    "name": "KiraPvP",
+    "description": "Lightweight PvP/QoL client mod: Freelook, HUD, ClickGUI and a safe Performance mode - built for the lowest possible FPS impact.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": ["QMODS"],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
