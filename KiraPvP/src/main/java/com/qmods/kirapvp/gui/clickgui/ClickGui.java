@@ -207,7 +207,7 @@ public final class ClickGui extends GuiScreen {
     }
 
     @Override
-    protected void mouseMovedOrUp(int mouseX, int mouseY, int state) {
+    protected void mouseReleased(int mouseX, int mouseY, int state) {
         if (draggingPanel) {
             draggingPanel = false;
             configManager.markGuiStateDirty();

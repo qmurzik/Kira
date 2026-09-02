@@ -7,8 +7,11 @@ import com.qmods.kirapvp.keybind.KeybindManager;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.WorldEvent;
+// PlayerRespawnEvent lives in FML's legacy gameevent.PlayerEvent, not
+// event.entity.player.PlayerEvent (confirmed against the actual 1.8.9
+// forgeBin jar - the two are unrelated classes that happen to share a name).
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
