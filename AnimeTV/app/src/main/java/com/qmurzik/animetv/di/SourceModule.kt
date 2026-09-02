@@ -56,21 +56,29 @@ object SourceModule {
     @Singleton
     fun provideStreamingProviders(demo: DemoStreamingSource): List<StreamingProvider> = listOf(demo)
 
+    // @JvmSuppressWildcards on the type argument below is required: Kotlin's List<out E> is
+    // declared-site covariant, and the Kotlin compiler emits a `List<? extends E>` JVM
+    // signature for a *parameter* of that type but not for the *return type* of the
+    // provideXProviders() methods above - so without this, Dagger sees two different erased
+    // types and reports "cannot be provided without an @Provides-annotated method" even
+    // though the matching provider is right there (its own error message suggests this fix).
     @Provides
     @Singleton
-    fun provideSearchAggregator(providers: List<SearchProvider>): SearchAggregator = SearchAggregator(providers)
+    fun provideSearchAggregator(providers: List<@JvmSuppressWildcards SearchProvider>): SearchAggregator =
+        SearchAggregator(providers)
 
     @Provides
     @Singleton
-    fun provideMetadataRegistry(providers: List<AnimeMetadataProvider>): MetadataRegistry =
+    fun provideMetadataRegistry(providers: List<@JvmSuppressWildcards AnimeMetadataProvider>): MetadataRegistry =
         MetadataRegistry(providers)
 
     @Provides
     @Singleton
-    fun provideEpisodeRegistry(providers: List<EpisodeProvider>): EpisodeRegistry = EpisodeRegistry(providers)
+    fun provideEpisodeRegistry(providers: List<@JvmSuppressWildcards EpisodeProvider>): EpisodeRegistry =
+        EpisodeRegistry(providers)
 
     @Provides
     @Singleton
-    fun provideStreamingRegistry(providers: List<StreamingProvider>): StreamingRegistry =
+    fun provideStreamingRegistry(providers: List<@JvmSuppressWildcards StreamingProvider>): StreamingRegistry =
         StreamingRegistry(providers)
 }
