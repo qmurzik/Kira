@@ -20,20 +20,25 @@ import java.util.Collections;
  */
 public final class ZoomModule extends Module {
 
-    private final SliderSetting zoomFov = new SliderSetting("Zoom FOV", 20, 5, 50, 1, "°");
+    private final SliderSetting zoomFov;
 
     private float savedFov;
 
     public ZoomModule() {
+        this(new SliderSetting("Zoom FOV", 20, 5, 50, 1, "°"));
+    }
+
+    private ZoomModule(SliderSetting zoomFov) {
         super("Zoom", "Hold to zoom in", Category.RENDER, Keybind.key(Keyboard.KEY_Z),
                 Collections.<com.qmods.kirapvp.settings.Setting<?>>singletonList(zoomFov));
+        this.zoomFov = zoomFov;
     }
 
     @Override
     public void onEnable() {
         Minecraft mc = Minecraft.getMinecraft();
         savedFov = mc.gameSettings.fovSetting;
-        mc.gameSettings.fovSetting = (float) zoomFov.getValue();
+        mc.gameSettings.fovSetting = zoomFov.getValue().floatValue();
     }
 
     @Override

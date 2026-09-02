@@ -43,8 +43,8 @@ import java.util.Arrays;
  */
 public final class FreelookModule extends Module {
 
-    private final SliderSetting sensitivity = new SliderSetting("Sensitivity", 1.0, 0.1, 3.0, 0.05, "x");
-    private final SliderSetting pitchLimit = new SliderSetting("Pitch Limit", 90, 45, 90, 1, "°");
+    private final SliderSetting sensitivity;
+    private final SliderSetting pitchLimit;
 
     private float lockedYaw;
     private float lockedPitch;
@@ -54,9 +54,20 @@ public final class FreelookModule extends Module {
     private float lastObservedPitch;
 
     public FreelookModule() {
+        this(new SliderSetting("Sensitivity", 1.0, 0.1, 3.0, 0.05, "x"),
+                new SliderSetting("Pitch Limit", 90, 45, 90, 1, "°"));
+    }
+
+    // Settings must exist as local variables before super(...) can reference
+    // them - instance field initializers only run after the super() call
+    // returns, so passing "sensitivity"/"pitchLimit" fields directly there
+    // does not compile.
+    private FreelookModule(SliderSetting sensitivity, SliderSetting pitchLimit) {
         super("Freelook", "Look around independently of your movement direction",
                 Category.MOVEMENT, Keybind.key(Keyboard.KEY_C),
                 Arrays.<com.qmods.kirapvp.settings.Setting<?>>asList(sensitivity, pitchLimit));
+        this.sensitivity = sensitivity;
+        this.pitchLimit = pitchLimit;
     }
 
     @Override
@@ -102,12 +113,12 @@ public final class FreelookModule extends Module {
             return;
         }
 
-        float sens = (float) sensitivity.getValue();
+        float sens = sensitivity.getValue().floatValue();
         float deltaYaw = (float) MathUtil.wrapDegrees(player.rotationYaw - lastObservedYaw);
         float deltaPitch = player.rotationPitch - lastObservedPitch;
 
         freelookYaw += deltaYaw * sens;
-        float limit = (float) pitchLimit.getValue();
+        float limit = pitchLimit.getValue().floatValue();
         freelookPitch = MathUtil.clamp(freelookPitch + deltaPitch * sens, -limit, limit);
 
         lastObservedYaw = player.rotationYaw;

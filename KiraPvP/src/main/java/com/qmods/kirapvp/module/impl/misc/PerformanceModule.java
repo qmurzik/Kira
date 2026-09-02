@@ -19,10 +19,10 @@ import java.util.Arrays;
  */
 public final class PerformanceModule extends Module {
 
-    private final BooleanSetting disableClouds = new BooleanSetting("Disable Clouds", true);
-    private final BooleanSetting disableFancyGraphics = new BooleanSetting("Fast Graphics", true);
-    private final BooleanSetting disableAmbientOcclusion = new BooleanSetting("Disable AO", true);
-    private final BooleanSetting reduceParticles = new BooleanSetting("Minimal Particles", true);
+    private final BooleanSetting disableClouds;
+    private final BooleanSetting disableFancyGraphics;
+    private final BooleanSetting disableAmbientOcclusion;
+    private final BooleanSetting reduceParticles;
 
     private int savedClouds;
     private boolean savedFancy;
@@ -31,9 +31,19 @@ public final class PerformanceModule extends Module {
     private boolean savedApplied;
 
     public PerformanceModule() {
+        this(new BooleanSetting("Disable Clouds", true), new BooleanSetting("Fast Graphics", true),
+                new BooleanSetting("Disable AO", true), new BooleanSetting("Minimal Particles", true));
+    }
+
+    private PerformanceModule(BooleanSetting disableClouds, BooleanSetting disableFancyGraphics,
+                               BooleanSetting disableAmbientOcclusion, BooleanSetting reduceParticles) {
         super("Performance", "Applies safe render trade-offs for stable FPS", Category.MISC, Keybind.none(),
                 Arrays.<com.qmods.kirapvp.settings.Setting<?>>asList(
                         disableClouds, disableFancyGraphics, disableAmbientOcclusion, reduceParticles));
+        this.disableClouds = disableClouds;
+        this.disableFancyGraphics = disableFancyGraphics;
+        this.disableAmbientOcclusion = disableAmbientOcclusion;
+        this.reduceParticles = reduceParticles;
     }
 
     @Override
