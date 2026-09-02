@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -188,7 +188,7 @@ private fun DetailsContent(
                                 Row(modifier = Modifier.padding(end = 12.dp)) {
                                     TvButton(
                                         text = link.siteName,
-                                        icon = Icons.Filled.OpenInNew,
+                                        icon = Icons.AutoMirrored.Filled.OpenInNew,
                                         onClick = {
                                             runCatching {
                                                 context.startActivity(

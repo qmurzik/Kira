@@ -3,6 +3,7 @@ package com.qmurzik.animetv.ui.settings
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.qmurzik.animetv.data.local.db.AnimeIndexDao
 import com.qmurzik.animetv.domain.repository.AppLanguage
@@ -44,6 +45,7 @@ class SettingsViewModel @Inject constructor(
     fun setWifiOnly(enabled: Boolean) = update { it.copy(network = it.network.copy(wifiOnly = enabled)) }
     fun setCacheLimitMb(limit: Int) = update { it.copy(network = it.network.copy(cacheLimitMb = limit)) }
 
+    @OptIn(ExperimentalCoilApi::class)
     fun clearImageCache() {
         context.imageLoader.memoryCache?.clear()
         context.imageLoader.diskCache?.clear()
