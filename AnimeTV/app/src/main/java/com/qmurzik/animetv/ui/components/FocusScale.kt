@@ -3,6 +3,7 @@ package com.qmurzik.animetv.ui.components
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 
 /**
  * The one focus-affordance every focusable TV element in this app shares: a gentle scale-up.

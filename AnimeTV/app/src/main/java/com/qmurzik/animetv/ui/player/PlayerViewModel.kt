@@ -84,28 +84,8 @@ class PlayerViewModel @Inject constructor(
     private var autoplayJob: Job? = null
     private var currentPlaybackSource: PlaybackSource? = null
 
-    init {
-        player.addListener(playerListener)
-        startTicker()
-        viewModelScope.launch {
-            when (val outcome = animeRepository.getDetails(animeId)) {
-                is AnimeOutcome.Success -> _uiState.value = _uiState.value.copy(
-                    animeTitle = outcome.value.title,
-                    posterUrl = outcome.value.posterUrl,
-                )
-                is AnimeOutcome.Error -> Unit // Non-fatal: the player still works, just without a title/poster.
-            }
-        }
-        viewModelScope.launch {
-            when (val outcome = animeRepository.getSeasons(animeId)) {
-                is AnimeOutcome.Success -> seasons = outcome.value
-                is AnimeOutcome.Error -> Unit // Non-fatal: next/previous just won't be offered.
-            }
-            updateEpisodeNavState()
-        }
-        loadEpisode(startSeason, startEpisode)
-    }
-
+    // Declared before init{} - Kotlin runs property initializers and init blocks in source
+    // order, and init{} below registers this listener, so it must already be assigned by then.
     private val playerListener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             _uiState.value = _uiState.value.copy(isPlaying = isPlaying)
@@ -127,6 +107,28 @@ class PlayerViewModel @Inject constructor(
             val subtitleCount = tracks.groups.count { it.type == C.TRACK_TYPE_TEXT && it.length > 0 }
             _uiState.value = _uiState.value.copy(audioTrackCount = audioCount, subtitleTrackCount = subtitleCount)
         }
+    }
+
+    init {
+        player.addListener(playerListener)
+        startTicker()
+        viewModelScope.launch {
+            when (val outcome = animeRepository.getDetails(animeId)) {
+                is AnimeOutcome.Success -> _uiState.value = _uiState.value.copy(
+                    animeTitle = outcome.value.title,
+                    posterUrl = outcome.value.posterUrl,
+                )
+                is AnimeOutcome.Error -> Unit // Non-fatal: the player still works, just without a title/poster.
+            }
+        }
+        viewModelScope.launch {
+            when (val outcome = animeRepository.getSeasons(animeId)) {
+                is AnimeOutcome.Success -> seasons = outcome.value
+                is AnimeOutcome.Error -> Unit // Non-fatal: next/previous just won't be offered.
+            }
+            updateEpisodeNavState()
+        }
+        loadEpisode(startSeason, startEpisode)
     }
 
     fun loadEpisode(seasonNumber: Int, episodeNumber: Int) {

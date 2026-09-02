@@ -57,7 +57,10 @@ androidx-media3-datasource-okhttp = { group = "androidx.media3", name = "media3-
 androidx-media3-common = { group = "androidx.media3", name = "media3-common", version.ref = "media3" }
 
 retrofit-core = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
-retrofit-kotlinx-serialization = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version = "1.0.0" }
+# Official first-party converter (folded into Retrofit itself as of 2.10.0, superseding the
+# now-deprecated com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter). Package
+# is retrofit2.converter.kotlinx.serialization - matches NetworkModule.kt's import.
+retrofit-kotlinx-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }
 okhttp-core = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 

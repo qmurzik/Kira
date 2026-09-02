@@ -47,7 +47,6 @@ jobs:
       - name: Set up Gradle (with build cache)
         uses: gradle/actions/setup-gradle@v4
         with:
-          build-root-directory: AnimeTV
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Make gradlew executable
@@ -110,8 +109,6 @@ jobs:
       - name: Set up Gradle (with build cache)
         if: steps.signing.outputs.configured == 'true'
         uses: gradle/actions/setup-gradle@v4
-        with:
-          build-root-directory: AnimeTV
 
       - name: Decode keystore
         if: steps.signing.outputs.configured == 'true'
