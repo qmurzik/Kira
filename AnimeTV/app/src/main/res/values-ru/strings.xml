@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AnimeTV</string>
+
+    <string name="nav_home">Главная</string>
+    <string name="nav_search">Поиск</string>
+    <string name="nav_favorites">Избранное</string>
+    <string name="nav_history">История</string>
+    <string name="nav_settings">Настройки</string>
+
+    <string name="action_watch">Смотреть</string>
+    <string name="action_details">Подробнее</string>
+    <string name="action_add_favorite">В избранное</string>
+    <string name="action_remove_favorite">Убрать из избранного</string>
+    <string name="action_retry">Повторить</string>
+    <string name="action_try_another_source">Другой источник</string>
+    <string name="action_back">Назад</string>
+    <string name="action_clear">Очистить</string>
+    <string name="action_clear_history">Очистить историю</string>
+    <string name="action_clear_image_cache">Очистить кеш изображений</string>
+    <string name="action_clear_metadata_cache">Очистить кеш данных</string>
+    <string name="action_remove">Удалить</string>
+    <string name="action_continue">Продолжить</string>
+    <string name="action_skip">Пропустить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_play_now">Смотреть сейчас</string>
+
+    <string name="home_continue_watching">Продолжить просмотр</string>
+    <string name="home_trending">В тренде</string>
+    <string name="home_popular">Популярное</string>
+    <string name="home_recently_added">Недавно добавлено</string>
+    <string name="home_recommended">Рекомендуем</string>
+    <string name="continue_watching_subtitle">Сезон %1$d · Серия %2$d</string>
+
+    <string name="search_placeholder">Поиск аниме…</string>
+    <string name="search_recent">Недавние запросы</string>
+    <string name="search_no_results">Ничего не найдено. Попробуйте другое название.</string>
+    <string name="sort_recent">Недавно добавленные</string>
+    <string name="sort_title">По названию А–Я</string>
+    <string name="sort_year">По году</string>
+
+    <string name="details_official_sources">Официально доступно на</string>
+    <string name="details_season">Сезон %1$d</string>
+    <string name="details_episode_number">Серия %1$d: %2$s</string>
+    <string name="details_episode_short">Серия %1$d</string>
+    <string name="details_episode_duration">%1$d мин</string>
+    <string name="status_airing">Выходит</string>
+    <string name="status_finished">Завершено</string>
+    <string name="status_upcoming">Анонсировано</string>
+    <string name="status_unknown">Статус неизвестен</string>
+    <plurals name="episodes_count">
+        <item quantity="one">%1$d серия</item>
+        <item quantity="few">%1$d серии</item>
+        <item quantity="many">%1$d серий</item>
+        <item quantity="other">%1$d серии</item>
+    </plurals>
+
+    <string name="player_episode_label">Сезон %1$d · Серия %2$d</string>
+    <string name="player_demo_badge">Демо-источник (%1$s) — подробнее в настройках</string>
+    <string name="player_next_episode_in">Следующая серия через %1$d с</string>
+
+    <string name="favorites_empty">Список избранного пуст. Добавляйте аниме со страницы описания.</string>
+    <string name="history_empty">Вы ещё ничего не смотрели.</string>
+
+    <string name="onboarding_welcome_title">Добро пожаловать в AnimeTV</string>
+    <string name="onboarding_welcome_subtitle">Ищите, открывайте новое и продолжайте с того места, где остановились — удобно с обычным пультом.</string>
+    <string name="onboarding_language_title">Выберите язык</string>
+    <string name="onboarding_quality_title">Предпочитаемое качество видео</string>
+    <string name="onboarding_source_title">Предпочитаемый источник данных</string>
+    <string name="language_system">Как в системе</string>
+    <string name="language_english">English</string>
+    <string name="language_russian">Русский</string>
+    <string name="source_auto">Автоматически (рекомендуется)</string>
+    <string name="source_jikan">MyAnimeList</string>
+    <string name="source_shikimori">Shikimori (на русском)</string>
+    <string name="source_anilist">AniList</string>
+
+    <string name="settings_playback">Воспроизведение</string>
+    <string name="settings_appearance">Внешний вид</string>
+    <string name="settings_network">Сеть</string>
+    <string name="settings_storage">Хранилище</string>
+    <string name="settings_quality">Качество видео</string>
+    <string name="settings_autoplay_next">Автопереход к следующей серии</string>
+    <string name="settings_skip_opening">Пропускать опенинг</string>
+    <string name="settings_skip_ending">Пропускать эндинг</string>
+    <string name="settings_preferred_source">Предпочитаемый источник</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_text_size">Размер текста</string>
+    <string name="settings_animations">Анимации</string>
+    <string name="settings_wifi_only">Только Wi-Fi</string>
+    <string name="quality_auto">Авто</string>
+    <string name="quality_high">Высокое</string>
+    <string name="quality_medium">Среднее</string>
+    <string name="quality_low">Низкое</string>
+
+    <string name="error_no_connectivity">Нет подключения к интернету. Проверьте сеть и попробуйте снова.</string>
+    <string name="error_timeout">Запрос выполняется слишком долго. Попробуйте ещё раз.</string>
+    <string name="error_rate_limited">Источник сейчас перегружен. Повторите попытку чуть позже.</string>
+    <string name="error_not_found">Не удалось найти это аниме.</string>
+    <string name="error_unsupported">Это действие не поддерживается доступным источником.</string>
+    <string name="error_http">Ошибка сервера (%1$d). Попробуйте ещё раз.</string>
+    <string name="error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>
+</resources>
