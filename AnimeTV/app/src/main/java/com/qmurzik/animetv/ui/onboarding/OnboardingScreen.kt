@@ -125,6 +125,11 @@ private fun SourceStep(selected: String?, onSelect: (String?) -> Unit) {
             onClick = { onSelect("jikan") },
         )
         TvButton(
+            text = stringResource(R.string.source_shikimori),
+            primary = selected == "shikimori",
+            onClick = { onSelect("shikimori") },
+        )
+        TvButton(
             text = stringResource(R.string.source_anilist),
             primary = selected == "anilist",
             onClick = { onSelect("anilist") },

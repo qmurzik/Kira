@@ -3,6 +3,7 @@ package com.qmurzik.animetv.data.repository
 import com.qmurzik.animetv.data.local.db.AnimeIndexDao
 import com.qmurzik.animetv.data.local.db.AnimeIndexEntity
 import com.qmurzik.animetv.data.source.anilist.AniListSource
+import com.qmurzik.animetv.data.source.shikimori.SHIKIMORI_SOURCE_ID
 import com.qmurzik.animetv.domain.model.AnimeDetails
 import com.qmurzik.animetv.domain.model.AnimeSummary
 import com.qmurzik.animetv.domain.model.PlaybackSource
@@ -10,6 +11,7 @@ import com.qmurzik.animetv.domain.model.Season
 import com.qmurzik.animetv.domain.model.SourceRef
 import com.qmurzik.animetv.domain.repository.AnimeOutcome
 import com.qmurzik.animetv.domain.repository.AnimeRepository
+import com.qmurzik.animetv.domain.repository.AppLanguage
 import com.qmurzik.animetv.domain.repository.HomeSections
 import com.qmurzik.animetv.domain.repository.SettingsRepository
 import com.qmurzik.animetv.domain.source.EpisodeRegistry
@@ -40,10 +42,22 @@ class AnimeRepositoryImpl @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : AnimeRepository {
 
-    /** Honors Settings -> Playback -> "preferred source": tries it first in the fallback
-     *  chain instead of always using the fixed Jikan-then-AniList-then-demo order. */
+    /**
+     * Honors Settings -> Playback -> "preferred source" by trying it first in the fallback
+     * chain instead of always using the fixed Jikan-then-Shikimori-then-AniList-then-demo
+     * order. Absent an explicit choice, Shikimori (Russian titles/synopses) is preferred
+     * automatically whenever the UI language is Russian - either chosen explicitly in
+     * Settings, or left on "system default" with a Russian device locale.
+     */
     private suspend fun List<SourceRef>.prioritized(): List<SourceRef> {
-        val preferred = settingsRepository.settings.first().playback.preferredSourceId ?: return this
+        val settings = settingsRepository.settings.first()
+        val explicit = settings.playback.preferredSourceId
+        val preferred = explicit ?: run {
+            val language = settings.appearance.language
+            val isRussian = language == AppLanguage.RUSSIAN ||
+                (language == AppLanguage.SYSTEM && java.util.Locale.getDefault().language == "ru")
+            if (isRussian) SHIKIMORI_SOURCE_ID else null
+        } ?: return this
         return sortedByDescending { it.sourceId == preferred }
     }
 

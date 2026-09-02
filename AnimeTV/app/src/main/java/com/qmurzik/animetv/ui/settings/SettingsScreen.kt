@@ -70,6 +70,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
                     options = listOf(
                         null to stringResource(R.string.source_auto),
                         "jikan" to stringResource(R.string.source_jikan),
+                        "shikimori" to stringResource(R.string.source_shikimori),
                         "anilist" to stringResource(R.string.source_anilist),
                     ),
                     selected = settings.playback.preferredSourceId,

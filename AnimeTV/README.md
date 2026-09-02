@@ -36,8 +36,8 @@ subtitle/audio track selection and auto-play-next — all built for a D-pad, fro
 - **Discovery**: Home with Continue Watching, Trending, Popular, Recently Added and
   Recommended shelves, plus a hero banner for a featured title.
 - **Search**: debounced, cancels stale in-flight requests, merges + deduplicates results
-  from every metadata source, keeps a local search history, sorts by relevance/title/year/
-  rating.
+  from every metadata source (including Shikimori's Russian catalog), keeps a local search
+  history, sorts by relevance/title/year/rating.
 - **Details**: synopsis, genres, year, status, rating, episode count, season/episode list
   with per-episode watch progress, favorite toggle, and links to the title's **official**
   licensed streaming pages (Crunchyroll, Netflix, HIDIVE, ...) when AniList publishes them.
@@ -62,15 +62,31 @@ subtitle/audio track selection and auto-play-next — all built for a D-pad, fro
 
 The app's source layer is deliberately modular (`domain/source/SourceProvider.kt`) so a
 title can be resolved through more than one provider, with automatic fallback and
-deduplication. Three roles are wired up today:
+deduplication. Four roles are wired up today:
 
 | Role | Provider | What it is |
 |---|---|---|
 | Search + metadata | **Jikan** (`api.jikan.moe`) | Free, key-less, public REST wrapper around MyAnimeList. No auth, published rate limit (~3 req/s), used as the primary source. |
+| Search + metadata (Russian) | **Shikimori** (`shikimori.one`) | Free, key-less, public REST API behind a large Russian-language anime tracking site — the closest local equivalent of MyAnimeList. Returns titles/synopses/genres in Russian. Automatically moved to the front of the metadata fallback chain when the app's language is Russian (explicitly, or "system default" on a Russian device locale) — see `AnimeRepositoryImpl.prioritized()`. |
 | Search + metadata + official links | **AniList** (`graphql.anilist.co`) | Free, key-less, public GraphQL API. Used as the metadata fallback, and as the source of `externalLinks(type: STREAMING)` — direct links to a title's *official* licensed streaming pages. |
 | Streaming | **Demo sample source** | See below. |
 
-**Why there's no real video streaming backend.** Every legitimate anime streaming catalog
+**Why there's no Russian-dubbed video streaming.** Popular Russian fan sites (AniLibria,
+Jut.su, AnimeGo and similar) distribute fan-translated/fan-dubbed video for free, and some
+even publish a documented API — but they don't hold distribution rights to the anime itself,
+so integrating one would mean shipping an app that streams copyrighted video without a
+license. That's exactly what item 4/21 of this project's brief rules out ("no pirate sites,
+no ToS violations"), so none of them are wired up here, no matter how popular or
+well-intentioned. Shikimori is different in kind: it's a catalog/tracking API, structurally
+identical to Jikan/AniList, and (deliberately) its `/animes/{id}/videos` endpoint — which
+does surface links to third-party video hosts — is never called; see `ShikimoriApi.kt`.
+Officially licensed Russian-language streaming has existed (Wakanim ran officially licensed
+simulcasts with Russian dubs before winding down its Russia operations; ivi.ru and
+Kinopoisk carry some licensed anime today) but none of them expose a free public API a
+hobbyist project can call — exactly the same situation as Crunchyroll/Netflix/HIDIVE below.
+If you have partner access to one of these, `StreamingProvider` is the integration point.
+
+**Why there's no real (any-language) video streaming backend.** Every legitimate anime streaming catalog
 (Crunchyroll, Netflix, HIDIVE, ...) requires a commercial partner agreement and an
 authenticated backend to serve video — there is no free, public, ToS-compliant API that
 returns actual licensed episode video. This project's brief explicitly forbids scraping,

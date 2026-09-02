@@ -3,6 +3,7 @@ package com.qmurzik.animetv.di
 import com.qmurzik.animetv.BuildConfig
 import com.qmurzik.animetv.data.remote.anilist.AniListApi
 import com.qmurzik.animetv.data.remote.jikan.JikanApi
+import com.qmurzik.animetv.data.remote.shikimori.ShikimoriApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -67,6 +68,27 @@ object NetworkModule {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 
+    // Shikimori's API docs (shikimori.one/api/doc) ask every third-party client to identify
+    // itself with a distinct User-Agent for rate-limiting purposes, instead of OkHttp's
+    // generic default one.
+    @Provides
+    @Singleton
+    @Named("shikimori")
+    fun provideShikimoriOkHttpClient(client: OkHttpClient): OkHttpClient = client.newBuilder()
+        .addInterceptor { chain ->
+            chain.proceed(chain.request().newBuilder().header("User-Agent", "AnimeTV").build())
+        }
+        .build()
+
+    @Provides
+    @Singleton
+    @Named("shikimori")
+    fun provideShikimoriRetrofit(@Named("shikimori") client: OkHttpClient, json: Json): Retrofit = Retrofit.Builder()
+        .baseUrl(BuildConfig.SHIKIMORI_BASE_URL)
+        .client(client)
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
+
     @Provides
     @Singleton
     fun provideJikanApi(@Named("jikan") retrofit: Retrofit): JikanApi = retrofit.create(JikanApi::class.java)
@@ -74,4 +96,9 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAniListApi(@Named("anilist") retrofit: Retrofit): AniListApi = retrofit.create(AniListApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideShikimoriApi(@Named("shikimori") retrofit: Retrofit): ShikimoriApi =
+        retrofit.create(ShikimoriApi::class.java)
 }

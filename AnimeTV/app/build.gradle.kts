@@ -39,6 +39,7 @@ android {
         // Overridable at build time via -PjikanBaseUrl=... etc, never secrets.
         buildConfigField("String", "JIKAN_BASE_URL", "\"https://api.jikan.moe/v4/\"")
         buildConfigField("String", "ANILIST_BASE_URL", "\"https://graphql.anilist.co/\"")
+        buildConfigField("String", "SHIKIMORI_BASE_URL", "\"https://shikimori.one/api/\"")
     }
 
     val hasReleaseSigning = signingProp("ANIMETV_KEYSTORE_PATH") != null

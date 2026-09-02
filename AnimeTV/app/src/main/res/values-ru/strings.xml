@@ -72,6 +72,7 @@
     <string name="language_russian">Русский</string>
     <string name="source_auto">Автоматически (рекомендуется)</string>
     <string name="source_jikan">MyAnimeList</string>
+    <string name="source_shikimori">Shikimori (на русском)</string>
     <string name="source_anilist">AniList</string>
 
     <string name="settings_playback">Воспроизведение</string>
