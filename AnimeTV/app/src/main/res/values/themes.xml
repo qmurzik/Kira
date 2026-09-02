@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- UI is 100% Jetpack Compose (TV Material3); this platform theme only
+         controls the window background shown for a split second before
+         Compose takes over, and the system status/nav bars (hidden on TV). -->
+    <style name="Theme.AnimeTV" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:colorBackground">@color/background</item>
+    </style>
+</resources>

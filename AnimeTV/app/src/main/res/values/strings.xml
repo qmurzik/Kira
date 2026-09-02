@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AnimeTV</string>
+
+    <!-- Navigation rail -->
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_favorites">Favorites</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Common actions -->
+    <string name="action_watch">Watch</string>
+    <string name="action_details">Details</string>
+    <string name="action_add_favorite">Add to Favorites</string>
+    <string name="action_remove_favorite">Remove from Favorites</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_try_another_source">Try another source</string>
+    <string name="action_back">Back</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_clear_history">Clear history</string>
+    <string name="action_clear_image_cache">Clear image cache</string>
+    <string name="action_clear_metadata_cache">Clear metadata cache</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_skip">Skip</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_play_now">Play now</string>
+
+    <!-- Home -->
+    <string name="home_continue_watching">Continue Watching</string>
+    <string name="home_trending">Trending</string>
+    <string name="home_popular">Popular</string>
+    <string name="home_recently_added">Recently Added</string>
+    <string name="home_recommended">Recommended</string>
+    <string name="continue_watching_subtitle">S%1$d · E%2$d</string>
+
+    <!-- Search -->
+    <string name="search_placeholder">Search anime…</string>
+    <string name="search_recent">Recent searches</string>
+    <string name="search_no_results">No results found. Try a different title.</string>
+    <string name="sort_recent">Recently added</string>
+    <string name="sort_title">Title A–Z</string>
+    <string name="sort_year">Year</string>
+
+    <!-- Details -->
+    <string name="details_official_sources">Watch officially on</string>
+    <string name="details_season">Season %1$d</string>
+    <string name="details_episode_number">Episode %1$d: %2$s</string>
+    <string name="details_episode_short">Episode %1$d</string>
+    <string name="details_episode_duration">%1$d min</string>
+    <string name="status_airing">Airing</string>
+    <string name="status_finished">Finished</string>
+    <string name="status_upcoming">Upcoming</string>
+    <string name="status_unknown">Unknown status</string>
+    <plurals name="episodes_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+
+    <!-- Player -->
+    <string name="player_episode_label">Season %1$d · Episode %2$d</string>
+    <string name="player_demo_badge">Demo source (%1$s) — see Settings for details</string>
+    <string name="player_next_episode_in">Next episode in %1$ds</string>
+
+    <!-- Favorites / History -->
+    <string name="favorites_empty">Your favorites list is empty. Add anime from its details screen.</string>
+    <string name="history_empty">You haven\'t watched anything yet.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Welcome to AnimeTV</string>
+    <string name="onboarding_welcome_subtitle">Search, discover and pick up right where you left off — built for your TV remote.</string>
+    <string name="onboarding_language_title">Choose your language</string>
+    <string name="onboarding_quality_title">Preferred video quality</string>
+    <string name="onboarding_source_title">Preferred metadata source</string>
+    <string name="language_system">System default</string>
+    <string name="language_english">English</string>
+    <string name="language_russian">Русский</string>
+    <string name="source_auto">Auto (recommended)</string>
+    <string name="source_jikan">MyAnimeList</string>
+    <string name="source_anilist">AniList</string>
+
+    <!-- Settings -->
+    <string name="settings_playback">Playback</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_network">Network</string>
+    <string name="settings_storage">Storage</string>
+    <string name="settings_quality">Video quality</string>
+    <string name="settings_autoplay_next">Auto-play next episode</string>
+    <string name="settings_skip_opening">Skip opening</string>
+    <string name="settings_skip_ending">Skip ending</string>
+    <string name="settings_preferred_source">Preferred source</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_text_size">Text size</string>
+    <string name="settings_animations">Animations</string>
+    <string name="settings_wifi_only">Wi-Fi only</string>
+    <string name="quality_auto">Auto</string>
+    <string name="quality_high">High</string>
+    <string name="quality_medium">Medium</string>
+    <string name="quality_low">Low</string>
+
+    <!-- Errors (item 19 — never a stack trace) -->
+    <string name="error_no_connectivity">No internet connection. Check your network and try again.</string>
+    <string name="error_timeout">The request took too long. Please try again.</string>
+    <string name="error_rate_limited">This source is busy right now. Please try again in a moment.</string>
+    <string name="error_not_found">We couldn\'t find this title.</string>
+    <string name="error_unsupported">This action isn\'t supported by the available source.</string>
+    <string name="error_http">Server error (%1$d). Please try again.</string>
+    <string name="error_unknown">Something went wrong. Please try again.</string>
+</resources>
