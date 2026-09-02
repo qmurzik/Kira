@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -48,7 +49,15 @@ class NetworkConnectivityObserver @Inject constructor(
     }.distinctUntilChanged()
 
     private fun hasAnyValidatedNetwork(manager: ConnectivityManager): Boolean {
-        val capabilities = manager.getNetworkCapabilities(manager.activeNetwork) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        // ConnectivityManager#getActiveNetwork() is API 23+; minSdk here is 21 (many generic
+        // Android TV boxes still ship Lollipop/early Marshmallow), so pre-23 falls back to the
+        // deprecated but still-functional getActiveNetworkInfo().
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val capabilities = manager.getNetworkCapabilities(manager.activeNetwork) ?: return false
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        } else {
+            @Suppress("DEPRECATION")
+            manager.activeNetworkInfo?.isConnected == true
+        }
     }
 }
