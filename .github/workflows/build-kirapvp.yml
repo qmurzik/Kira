@@ -53,29 +53,33 @@ jobs:
       # class names that couldn't be verified offline. Safe to delete once
       # the build is green - it does not affect the build itself.
       - name: Inspect Minecraft/Forge API (debug)
-        if: steps.build.outcome == 'failure'
+        if: always() && steps.build.outcome == 'failure'
         run: |
+          set +e
           set -x
           echo "--- jars containing GuiScreen.class ---"
           : > /tmp/guiscreen_jars.txt
           find ~/.gradle -iname "*.jar" 2>/dev/null | while read -r j; do
-            unzip -l "$j" 2>/dev/null | grep -q "net/minecraft/client/gui/GuiScreen.class" && echo "$j" >> /tmp/guiscreen_jars.txt
+            if unzip -l "$j" 2>/dev/null | grep -q "net/minecraft/client/gui/GuiScreen.class"; then
+              echo "$j" >> /tmp/guiscreen_jars.txt
+            fi
           done
           cat /tmp/guiscreen_jars.txt
           JAR=$(head -1 /tmp/guiscreen_jars.txt)
           if [ -n "$JAR" ]; then
             mkdir -p /tmp/inspect && cd /tmp/inspect
-            unzip -o "$JAR" "net/minecraft/client/gui/GuiScreen.class" "net/minecraftforge/event/entity/player/PlayerEvent*.class" "net/minecraftforge/client/event/EntityViewRenderEvent*.class" "net/minecraftforge/client/event/RenderGameOverlayEvent*.class" 2>&1 || true
+            unzip -o "$JAR" "net/minecraft/client/gui/GuiScreen.class" "net/minecraftforge/event/entity/player/PlayerEvent*.class" "net/minecraftforge/client/event/EntityViewRenderEvent*.class" "net/minecraftforge/client/event/RenderGameOverlayEvent*.class"
             echo "--- GuiScreen mouse-related methods ---"
-            javap -p net/minecraft/client/gui/GuiScreen.class 2>&1 | grep -i "mouse\|key"
+            javap -p net/minecraft/client/gui/GuiScreen.class | grep -i "mouse\|key"
             echo "--- PlayerEvent nested classes present in jar ---"
             unzip -l "$JAR" | grep "PlayerEvent"
           else
             echo "Could not locate a jar containing GuiScreen.class"
           fi
+          exit 0
 
       - name: Fail job if build failed
-        if: steps.build.outcome == 'failure'
+        if: always() && steps.build.outcome == 'failure'
         run: exit 1
 
       - name: Upload built jar
