@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Файлообменник — без регистрации</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <header class="topbar">
+    <span class="brand">📁 Файлообменник</span>
+  </header>
+
+  <main class="card">
+    <h1>Поделитесь файлами за секунду</h1>
+    <p class="muted">Без регистрации и входа. Загрузите файлы — получите ссылку, по которой их можно просмотреть и скачать.</p>
+
+    <div id="dropzone" class="dropzone">
+      <input type="file" id="file-input" multiple hidden>
+      <div class="dropzone-inner">
+        <div class="dropzone-icon">⬆️</div>
+        <p><strong>Перетащите файлы сюда</strong> или нажмите, чтобы выбрать</p>
+        <p class="muted small">Фото, видео, документы, архивы — что угодно</p>
+      </div>
+    </div>
+
+    <div id="selected-list" class="selected-list"></div>
+
+    <div class="options-row">
+      <label for="expiry-select">Срок действия ссылки:</label>
+      <select id="expiry-select">
+        <option value="1">1 час</option>
+        <option value="24">1 день</option>
+        <option value="168" selected>7 дней</option>
+        <option value="720">30 дней</option>
+        <option value="0">Без ограничения</option>
+      </select>
+    </div>
+
+    <button id="upload-btn" class="btn btn-primary btn-lg" disabled>Загрузить</button>
+
+    <div id="progress-wrap" class="progress-wrap" hidden>
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+      <div id="progress-text" class="muted small">0%</div>
+    </div>
+
+    <div id="result" class="result" hidden>
+      <p>✅ Готово! Ссылка на файлы:</p>
+      <div class="link-row">
+        <input type="text" id="result-link" readonly>
+        <button id="result-copy" class="btn">Скопировать</button>
+      </div>
+      <a id="result-open" class="btn btn-primary" target="_blank" rel="noopener">Открыть страницу с файлами</a>
+    </div>
+
+    <div id="error" class="error" hidden></div>
+  </main>
+
+  <footer class="footer muted">Файлы хранятся временно и удаляются автоматически по истечении срока ссылки.</footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
