@@ -51,14 +51,54 @@ function fs_ensure_data_dir(): ?string
     return null;
 }
 
+// Без похожих друг на друга символов (0/O, 1/l/I) — короткую ссылку легко
+// продиктовать или перепечатать вручную без ошибок.
+define('FS_ID_ALPHABET', '23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ');
+define('FS_ID_LENGTH', 5);
+
+/**
+ * Короткие ссылки (5 символов из алфавита в 54 знака — это около
+ * 459 миллионов комбинаций) — размен точности ради удобства: их проще
+ * продиктовать, но и перебрать вручную/скриптом уже реальнее, чем
+ * 128-битный идентификатор. Для ссылок с чувствительными файлами имеет
+ * смысл ставить короткий срок действия.
+ */
 function fs_new_id(): string
 {
-    return bin2hex(random_bytes(16));
+    $alphabetLen = strlen(FS_ID_ALPHABET);
+    do {
+        $id = '';
+        for ($i = 0; $i < FS_ID_LENGTH; $i++) {
+            $id .= FS_ID_ALPHABET[random_int(0, $alphabetLen - 1)];
+        }
+    } while (is_dir(fs_share_dir($id)));
+    return $id;
 }
 
 function fs_is_valid_id(string $id): bool
 {
-    return (bool) preg_match('/^[a-f0-9]{32}$/', $id);
+    return (bool) preg_match('/^[23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ]{' . FS_ID_LENGTH . '}$/', $id);
+}
+
+/**
+ * Ссылка отдаётся без "id=" в query string ("?ab3xZ" вместо "?id=ab3xZ"),
+ * чтобы была короче. Дополнительные параметры (f=, mode=, zip=) идут через
+ * "&" как обычно и парсятся PHP в $_GET штатно.
+ */
+function fs_extract_short_id(): string
+{
+    if (isset($_GET['id']) && $_GET['id'] !== '') {
+        return (string) $_GET['id'];
+    }
+    $query = $_SERVER['QUERY_STRING'] ?? '';
+    if ($query === '') {
+        return '';
+    }
+    $first = strtok($query, '&');
+    if ($first !== false && strpos($first, '=') === false) {
+        return urldecode($first);
+    }
+    return '';
 }
 
 function fs_share_dir(string $id): string
@@ -253,69 +293,121 @@ function fs_style(): string
     return <<<'CSS'
 :root {
   color-scheme: light dark;
-  --bg: #f4f5f7; --card-bg: #fff; --text: #1c1e21; --muted: #6b7280;
-  --border: #e3e5e8; --accent: #3b6cf6; --accent-hover: #2f57cc; --danger: #d64545; --radius: 12px;
+  --bg: #faf7fc; --card-bg: #fff; --text: #241b2e; --muted: #8b8298;
+  --border: #ece3f3; --accent: #a855f7; --accent-2: #ec4899; --accent-hover: #9333ea;
+  --danger: #e0356b; --radius: 18px;
+  --grad: linear-gradient(135deg, var(--accent), var(--accent-2));
+  --shadow: 0 20px 50px -25px rgba(168,85,247,.35);
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg:#14161a; --card-bg:#1d2025; --text:#eceef1; --muted:#9aa1ac; --border:#2c3038; --accent:#5b85ff; --accent-hover:#7397ff; }
+  :root {
+    --bg:#15121c; --card-bg:#1f1a29; --text:#f3eef9; --muted:#a094ad;
+    --border:#332a40; --accent:#c084fc; --accent-2:#f472b6; --accent-hover:#d6a8ff;
+    --danger:#ff6b9d; --shadow: 0 20px 50px -25px rgba(0,0,0,.6);
+  }
 }
+/* Toggle visibility only with the `hidden` attribute (el.hidden in JS) —
+   this rule guarantees it always wins over any other display:* below. */
+[hidden] { display: none !important; }
+
 * { box-sizing: border-box; }
-body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
+body {
+  margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg); color:var(--text); position:relative; overflow-x:hidden;
+}
+body::before, body::after {
+  content:""; position:fixed; width:46vmax; height:46vmax; border-radius:50%;
+  filter:blur(90px); opacity:.16; z-index:-1; pointer-events:none;
+}
+body::before { top:-18vmax; right:-14vmax; background:var(--accent); }
+body::after { bottom:-20vmax; left:-16vmax; background:var(--accent-2); }
+
 .page { max-width:760px; margin:0 auto; padding:24px 16px 48px; min-height:100vh; display:flex; flex-direction:column; }
-.topbar { padding:8px 0 20px; }
-.brand { font-weight:700; font-size:1.1rem; text-decoration:none; color:var(--text); }
-.card { background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius); padding:28px; flex:1; }
-h1 { margin-top:0; font-size:1.5rem; }
+.topbar { padding:8px 0 22px; }
+.brand {
+  font-weight:800; font-size:1.15rem; text-decoration:none; letter-spacing:-.01em;
+  background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.card { background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius); padding:30px; flex:1; box-shadow:var(--shadow); }
+h1 { margin-top:0; font-size:1.5rem; letter-spacing:-.01em; }
 .muted { color:var(--muted); }
 .small { font-size:.85rem; }
-.dropzone { border:2px dashed var(--border); border-radius:var(--radius); padding:36px 16px; text-align:center; cursor:pointer; margin:20px 0; transition:border-color .15s,background .15s; }
-.dropzone.dragover { border-color:var(--accent); background:rgba(59,108,246,.06); }
+
+.dropzone { border:2px dashed var(--border); border-radius:var(--radius); padding:38px 16px; text-align:center; cursor:pointer; margin:20px 0; transition:border-color .15s,background .15s; }
+.dropzone.dragover { border-color:var(--accent); background:rgba(168,85,247,.08); }
 .dropzone-icon { font-size:2rem; margin-bottom:8px; }
+
 .selected-list { margin:8px 0; display:flex; flex-direction:column; gap:6px; }
-.selected-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:.9rem; }
+.selected-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:10px; font-size:.9rem; }
 .selected-item .name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .selected-item .remove { cursor:pointer; color:var(--danger); border:none; background:none; font-size:1rem; }
+
 .options-row { display:flex; align-items:center; gap:10px; margin:16px 0; flex-wrap:wrap; }
-.options-row select { padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text); }
-.btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--border); background:var(--card-bg); color:var(--text); border-radius:8px; padding:8px 14px; font-size:.95rem; cursor:pointer; text-decoration:none; }
+.options-row select { padding:7px 12px; border-radius:999px; border:1px solid var(--border); background:var(--card-bg); color:var(--text); }
+
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  border:1px solid var(--border); background:var(--card-bg); color:var(--text);
+  border-radius:999px; padding:9px 16px; font-size:.95rem; cursor:pointer; text-decoration:none;
+  transition:transform .1s, border-color .15s;
+}
 .btn:hover { border-color:var(--accent); }
-.btn-sm { padding:5px 10px; font-size:.85rem; }
-.btn-lg { padding:12px 20px; font-size:1rem; width:100%; }
-.btn-primary { background:var(--accent); border-color:var(--accent); color:#fff; }
-.btn-primary:hover { background:var(--accent-hover); }
-.btn:disabled { opacity:.5; cursor:not-allowed; }
+.btn:active { transform:scale(.97); }
+.btn-sm { padding:6px 12px; font-size:.85rem; }
+.btn-lg { padding:13px 20px; font-size:1rem; width:100%; }
+.btn-primary { background:var(--grad); border-color:transparent; color:#fff; font-weight:600; }
+.btn-primary:hover { filter:brightness(1.06); border-color:transparent; }
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
 .progress-wrap { margin:16px 0; }
 .progress-bar { height:8px; border-radius:4px; background:var(--border); overflow:hidden; }
-.progress-fill { height:100%; width:0; background:var(--accent); transition:width .1s; }
-.result { margin-top:20px; padding:16px; border:1px solid var(--border); border-radius:10px; }
+.progress-fill { height:100%; width:0; background:var(--grad); transition:width .1s; }
+
+.result { margin-top:20px; padding:16px; border:1px solid var(--border); border-radius:14px; }
 .link-row { display:flex; gap:8px; margin:10px 0; }
-.link-row input { flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); }
-.error { margin-top:16px; padding:12px 14px; border-radius:8px; background:rgba(214,69,69,.1); color:var(--danger); border:1px solid var(--danger); }
+.link-row input { flex:1; padding:9px 12px; border-radius:999px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:.95rem; }
+
+.error { margin-top:16px; padding:12px 14px; border-radius:12px; background:rgba(224,53,107,.1); color:var(--danger); border:1px solid var(--danger); }
 .footer { text-align:center; padding-top:24px; font-size:.8rem; }
+
 .share-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
 .share-actions { display:flex; gap:8px; flex-wrap:wrap; }
+
 .file-list { display:flex; flex-direction:column; gap:12px; }
-.file-card { border:1px solid var(--border); border-radius:10px; padding:12px; }
+.file-card { border:1px solid var(--border); border-radius:14px; padding:12px; transition:border-color .15s; }
+.file-card:hover { border-color:var(--accent); }
 .file-row { display:flex; align-items:center; gap:10px; }
 .file-icon { font-size:1.6rem; }
 .file-info { flex:1; min-width:0; }
 .file-name { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .file-buttons { display:flex; gap:6px; flex-shrink:0; }
-.preview-thumb { display:block; max-width:100%; max-height:320px; margin-top:10px; border-radius:8px; object-fit:contain; cursor:zoom-in; }
+
+.preview-thumb { display:block; max-width:100%; max-height:320px; margin-top:10px; border-radius:10px; object-fit:contain; cursor:zoom-in; }
 .preview-open { display:block; }
-.preview-media, .preview-pdf { width:100%; margin-top:10px; border-radius:8px; border:none; }
+.preview-media, .preview-pdf { width:100%; margin-top:10px; border-radius:10px; border:none; }
 .preview-media { max-height:400px; }
 .preview-pdf { height:480px; }
 .preview-audio { width:100%; margin-top:10px; }
 .pdf-details summary { cursor:pointer; margin-top:8px; }
-.text-preview { margin-top:10px; padding:10px; background:var(--bg); border-radius:8px; max-height:360px; overflow:auto; white-space:pre-wrap; word-break:break-word; font-size:.85rem; }
+.text-preview { margin-top:10px; padding:10px; background:var(--bg); border-radius:10px; max-height:360px; overflow:auto; white-space:pre-wrap; word-break:break-word; font-size:.85rem; }
+
 .empty-state { text-align:center; padding:48px 20px; }
+.empty-state .sakura { font-size:2.4rem; display:block; margin-bottom:8px; }
+
 .diag-table { width:100%; border-collapse:collapse; margin-top:12px; font-size:.9rem; }
 .diag-table td { padding:6px 8px; border-bottom:1px solid var(--border); }
 .diag-ok { color:#2e9e4e; } .diag-bad { color:var(--danger); }
-.lightbox { position:fixed; inset:0; background:rgba(0,0,0,.9); display:flex; align-items:center; justify-content:center; z-index:1000; }
-.lightbox img { max-width:92vw; max-height:92vh; object-fit:contain; }
-.lightbox-close { position:absolute; top:16px; right:16px; font-size:1.4rem; background:none; border:none; color:#fff; cursor:pointer; }
+
+.lightbox {
+  position:fixed; inset:0; background:rgba(10,6,15,.92);
+  display:flex; align-items:center; justify-content:center; z-index:1000;
+}
+.lightbox img { max-width:92vw; max-height:92vh; object-fit:contain; border-radius:10px; }
+.lightbox-close {
+  position:absolute; top:16px; right:16px; width:40px; height:40px; border-radius:50%;
+  font-size:1.2rem; background:rgba(255,255,255,.1); border:none; color:#fff; cursor:pointer;
+}
+.lightbox-close:hover { background:rgba(255,255,255,.2); }
 CSS;
 }
 
@@ -324,7 +416,7 @@ function fs_head(string $title): void
     echo "<!doctype html>\n<html lang=\"ru\">\n<head>\n<meta charset=\"utf-8\">\n";
     echo "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
     echo '<title>' . h($title) . "</title>\n<style>" . fs_style() . "</style>\n</head>\n<body>\n<div class=\"page\">\n";
-    echo "<header class=\"topbar\"><a href=\"?\" class=\"brand\">📁 Файлообменник</a></header>\n";
+    echo "<header class=\"topbar\"><a href=\"?\" class=\"brand\">🌸 Файлообменник</a></header>\n";
 }
 
 function fs_foot(): void
@@ -477,7 +569,7 @@ function handle_upload(): void
         'files' => $files,
     ]);
 
-    fs_json_response(['ok' => true, 'id' => $id, 'url' => '?id=' . $id]);
+    fs_json_response(['ok' => true, 'id' => $id, 'url' => '?' . $id]);
 }
 
 // ---------------------------------------------------------------------------
@@ -801,7 +893,7 @@ function render_share_page(string $id): void
     if ($meta === null) {
         http_response_code(404);
         fs_head('Ссылка не найдена — Файлообменник');
-        echo '<main class="card empty-state"><h1>Ссылка недоступна</h1>';
+        echo '<main class="card empty-state"><span class="sakura">🌸</span><h1>Ссылка недоступна</h1>';
         echo '<p>Файлы не найдены — ссылка неверна или срок её действия истёк.</p>';
         echo '<a class="btn" href="?">Загрузить свои файлы</a></main>';
         fs_foot();
@@ -821,7 +913,7 @@ function render_share_page(string $id): void
     echo '</div><div class="share-actions">';
     echo '<button class="btn" id="copy-link">🔗 Скопировать ссылку</button>';
     if ($fileCount > 1 && class_exists('ZipArchive')) {
-        echo '<a class="btn btn-primary" href="?id=' . h($id) . '&zip=1">⬇ Скачать всё (ZIP)</a>';
+        echo '<a class="btn btn-primary" href="?' . h($id) . '&zip=1">⬇ Скачать всё (ZIP)</a>';
     }
     echo '</div></div><div class="file-list">';
 
@@ -830,7 +922,7 @@ function render_share_page(string $id): void
     foreach ($meta['files'] as $f) {
         $ext = fs_safe_ext($f['name']);
         $cat = fs_file_category($f['mime'], $ext);
-        $base = '?id=' . h($id) . '&f=' . (int) $f['idx'];
+        $base = '?' . h($id) . '&f=' . (int) $f['idx'];
         $downloadUrl = $base . '&mode=attachment';
         $inlineUrl = $base . '&mode=inline';
         $rawUrl = $base . '&mode=raw';
@@ -928,7 +1020,7 @@ function render_share_page(string $id): void
 fs_maybe_cleanup();
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$id = isset($_GET['id']) ? (string) $_GET['id'] : '';
+$id = fs_extract_short_id();
 $fidx = isset($_GET['f']) ? (int) $_GET['f'] : null;
 $mode = isset($_GET['mode']) ? (string) $_GET['mode'] : 'attachment';
 
