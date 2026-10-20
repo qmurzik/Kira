@@ -1,6 +1,9 @@
 package app.pulse.client.di
 
 import android.app.Application
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import app.pulse.client.BuildConfig
 import app.pulse.client.core.security.AppLock
 import app.pulse.client.core.security.SecureStore
@@ -10,9 +13,6 @@ import app.pulse.client.data.auth.VkIdAuth
 import app.pulse.client.data.settings.SettingsRepository
 import app.pulse.client.music.LocalAudioRepository
 import app.pulse.client.music.MusicController
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

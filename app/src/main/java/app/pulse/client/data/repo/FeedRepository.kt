@@ -11,10 +11,12 @@ import androidx.paging.map
 import androidx.room.withTransaction
 import app.pulse.client.data.api.VkApi
 import app.pulse.client.data.api.dto.CommentDto
+import app.pulse.client.data.api.dto.GroupDto
 import app.pulse.client.data.api.dto.ItemsResponse
 import app.pulse.client.data.api.dto.PhotoDto
 import app.pulse.client.data.api.dto.PostDto
 import app.pulse.client.data.api.dto.UploadServerDto
+import app.pulse.client.data.api.dto.UserDto
 import app.pulse.client.data.db.AppDatabase
 import app.pulse.client.data.db.FeedEntity
 import app.pulse.client.data.db.FeedKeyEntity
@@ -22,8 +24,6 @@ import app.pulse.client.data.mapper.Owners
 import app.pulse.client.data.mapper.best
 import app.pulse.client.data.mapper.toComment
 import app.pulse.client.data.mapper.toPost
-import app.pulse.client.data.api.dto.GroupDto
-import app.pulse.client.data.api.dto.UserDto
 import app.pulse.client.domain.model.Comment
 import app.pulse.client.domain.model.Owner
 import app.pulse.client.domain.model.Post

@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.PictureInPictureAlt
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -289,6 +290,7 @@ private fun EmbedPlayer(url: String, modifier: Modifier) {
     )
 }
 
+@kotlin.OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun VideoInfo(v: VideoItem, onLike: () -> Unit, onComments: () -> Unit) {
     val context = LocalContext.current

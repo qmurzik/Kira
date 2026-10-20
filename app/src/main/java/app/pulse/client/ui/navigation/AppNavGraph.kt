@@ -1,31 +1,25 @@
 package app.pulse.client.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import app.pulse.client.ui.LocalSession
 import app.pulse.client.ui.auth.AccountsScreen
 import app.pulse.client.ui.auth.LoginScreen
-import app.pulse.client.ui.messages.ChatScreen
-import app.pulse.client.ui.messages.DialogsScreen
-import app.pulse.client.ui.music.MusicScreen
-import app.pulse.client.ui.notifications.NotificationsScreen
-import app.pulse.client.ui.services.ServicesScreen
-import app.pulse.client.ui.settings.PinSetupScreen
-import app.pulse.client.ui.settings.SettingsScreen
-import app.pulse.client.ui.video.ClipsScreen
-import app.pulse.client.ui.video.VideoPlayerScreen
-import app.pulse.client.ui.video.VideoScreen
-import androidx.compose.runtime.remember
-import androidx.lifecycle.viewmodel.compose.viewModel
-import app.pulse.client.ui.LocalSession
 import app.pulse.client.ui.feed.CreatePostScreen
 import app.pulse.client.ui.feed.FeedScreen
 import app.pulse.client.ui.feed.FeedViewModel
 import app.pulse.client.ui.feed.PostScreen
 import app.pulse.client.ui.feed.StoriesScreen
+import app.pulse.client.ui.messages.ChatScreen
+import app.pulse.client.ui.messages.DialogsScreen
+import app.pulse.client.ui.music.MusicScreen
+import app.pulse.client.ui.notifications.NotificationsScreen
 import app.pulse.client.ui.profile.BirthdaysScreen
 import app.pulse.client.ui.profile.FriendsScreen
 import app.pulse.client.ui.profile.GroupsScreen
@@ -33,6 +27,12 @@ import app.pulse.client.ui.profile.PhotoViewerScreen
 import app.pulse.client.ui.profile.PhotosScreen
 import app.pulse.client.ui.profile.ProfileScreen
 import app.pulse.client.ui.search.SearchScreen
+import app.pulse.client.ui.services.ServicesScreen
+import app.pulse.client.ui.settings.PinSetupScreen
+import app.pulse.client.ui.settings.SettingsScreen
+import app.pulse.client.ui.video.ClipsScreen
+import app.pulse.client.ui.video.VideoPlayerScreen
+import app.pulse.client.ui.video.VideoScreen
 
 @Composable
 fun AppNavGraph(nav: NavHostController) {

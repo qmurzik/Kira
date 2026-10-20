@@ -71,21 +71,23 @@ class UserSession(val userId: Long, private val container: AppContainer) : Sessi
 
     override fun token(): String? = container.accounts.get(userId)?.accessToken
 
-    override suspend fun refreshAfterExpired(failedToken: String): Boolean = refreshLock.withLock {
-        val account = container.accounts.get(userId) ?: return false
-        // Another request already refreshed while we were waiting.
-        if (account.accessToken != failedToken) return true
-        if (account.refreshToken == null) {
-            container.onSessionExpired(userId)
-            return false
-        }
-        try {
-            val renewed = container.vkId.refresh(account)
-            container.accounts.upsert(renewed)
-            true
-        } catch (e: Exception) {
-            container.onSessionExpired(userId)
-            false
+    override suspend fun refreshAfterExpired(failedToken: String): Boolean {
+        refreshLock.withLock {
+            val account = container.accounts.get(userId) ?: return false
+            // Another request already refreshed while we were waiting.
+            if (account.accessToken != failedToken) return true
+            if (account.refreshToken == null) {
+                container.onSessionExpired(userId)
+                return false
+            }
+            return try {
+                val renewed = container.vkId.refresh(account)
+                container.accounts.upsert(renewed)
+                true
+            } catch (e: Exception) {
+                container.onSessionExpired(userId)
+                false
+            }
         }
     }
 

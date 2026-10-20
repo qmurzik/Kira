@@ -1,13 +1,13 @@
 package app.pulse.client
 
 import android.app.Application
+import app.pulse.client.di.AppContainer
+import app.pulse.client.notifications.MessagesSyncWorker
+import app.pulse.client.notifications.Notifier
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
-import app.pulse.client.di.AppContainer
-import app.pulse.client.notifications.MessagesSyncWorker
-import app.pulse.client.notifications.Notifier
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch

@@ -131,8 +131,16 @@ Media3 `MediaSessionService` с системным медиа-уведомлен
 
 ## Проверка без SDK
 
-`python3 scripts/check_project.py` проверяет импорты проектных классов, ссылки на ресурсы,
-классы в манифесте, алиасы каталога версий и следы логирования токенов.
+- `python3 scripts/check_project.py`: импорты проектных классов, ссылки на ресурсы (`R.*` и `@type/name`),
+  классы в манифесте, алиасы каталога версий, баланс скобок, следы логирования токенов, неиспользуемые
+  импорты (`--fix-imports` удаляет их).
+- `python3 scripts/check_symbols.py`: эвристический поиск неразрешённых вызовов и extension-функций без
+  импорта (`.padding`, `.clickable`, `.stateIn`, `.collectAsStateWithLifecycle` и т.д.).
+- Чистый Kotlin (`core/util/Format.kt`) дополнительно скомпилирован и проверен компилятором Kotlin 2.0.21,
+  который поставляется вместе с Gradle.
+
+Это не замена компиляции: Android- и Compose-код здесь не собирался. Полная проверка —
+`./gradlew assembleDebug testDebugUnitTest` в Android Studio или GitHub Actions (`.github/workflows/build.yml`).
 
 ## Этапы
 

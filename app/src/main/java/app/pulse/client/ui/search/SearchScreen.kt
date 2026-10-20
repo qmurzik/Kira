@@ -80,11 +80,11 @@ class SearchViewModel(private val session: UserSession) : ViewModel() {
         viewModelScope.launch {
             combine(query.debounce(400), tab) { q, t -> q.trim() to t }
                 .distinctUntilChanged()
-                .collect { (q, t) -> run(q, t) }
+                .collect { (q, t) -> execute(q, t) }
         }
     }
 
-    private suspend fun run(q: String, t: SearchTab) {
+    private suspend fun execute(q: String, t: SearchTab) {
         if (q.isEmpty()) {
             result.value = SearchResult.Idle
             return
