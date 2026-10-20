@@ -1,0 +1,10 @@
+# Copy to local.properties (it is git-ignored) and fill in.
+sdk.dir=/path/to/Android/Sdk
+
+# ID of YOUR application registered at https://id.vk.ru (VK ID, OAuth 2.1).
+# Can be left empty: the login screen lets you type it in at runtime.
+VK_CLIENT_ID=
+
+# Optional overrides
+#VK_ID_HOST=id.vk.ru
+#VK_API_HOST=api.vk.com

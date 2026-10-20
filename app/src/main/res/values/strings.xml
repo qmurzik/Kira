@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Пульс</string>
+
+    <string name="channel_messages">Сообщения</string>
+    <string name="channel_messages_desc">Новые личные сообщения и беседы</string>
+    <string name="channel_media">Воспроизведение</string>
+    <string name="channel_media_desc">Управление музыкой в фоне</string>
+    <string name="channel_events">События</string>
+    <string name="channel_events_desc">Ответы, отметки «нравится», заявки в друзья</string>
+
+    <string name="action_reply">Ответить</string>
+    <string name="action_mark_read">Прочитано</string>
+    <string name="reply_hint">Сообщение</string>
+    <string name="notification_hidden_text">Новое сообщение</string>
+    <string name="notification_sending_failed">Не удалось отправить ответ</string>
+</resources>

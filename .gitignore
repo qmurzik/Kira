@@ -1,0 +1,16 @@
+*.iml
+.gradle/
+.kotlin/
+/build
+/app/build
+/captures
+/.idea/
+.DS_Store
+.externalNativeBuild
+.cxx
+
+# Local config and secrets: never commit
+local.properties
+keystore.properties
+*.jks
+*.keystore
