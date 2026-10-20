@@ -298,7 +298,10 @@ private fun AuthWebView(
                                 } else {
                                     Intent(Intent.ACTION_VIEW, Uri.parse(target))
                                 }
-                                view.context.startActivity(intent.addCategory(Intent.CATEGORY_BROWSABLE).setComponent(null).setSelector(null))
+                                intent.addCategory(Intent.CATEGORY_BROWSABLE)
+                                intent.component = null
+                                intent.selector = null
+                                view.context.startActivity(intent)
                             }
                             return true
                         }
