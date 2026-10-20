@@ -127,6 +127,30 @@ if edit and button:
 elif nodes or SDK >= 23:
     failures.append("login form fields not found")
 
+# Browser login: VK ID page in the system browser, then the vk<ID>:// redirect back into the app.
+if SDK >= 30 and "--browser" in sys.argv:
+    adb("shell", "am", "set-debug-app", "--persistent", "com.android.chrome")
+    adb("shell", "sh", "-c", "'echo \"chrome --disable-fre --no-default-browser-check --no-first-run\" > /data/local/tmp/chrome-command-line'")
+    adb("shell", "am", "force-stop", "com.android.chrome")
+    nodes = dump_ui("06_form")
+    b = next((n for n in nodes if n.get("text") == "Войти через браузер"), None)
+    if b:
+        adb("shell", "input", "tap", *map(str, center(b)))
+        time.sleep(25)
+        page = dump_ui("07_browser")
+        texts = " ".join((n.get("text") or "") for n in page)
+        print("BROWSER_PAGE_RENDERED:", "Продолжить" in texts or "Lite Web" in texts)
+    # Return path: a forged redirect must reach the app and be rejected by the state check.
+    adb("shell", "am", "start", "-a", "android.intent.action.VIEW",
+        "-d", "'vk54837133://vk.com/blank.html?code=x&state=forged&device_id=y'")
+    time.sleep(4)
+    back = dump_ui("08_redirect")
+    texts = " ".join((n.get("text") or "") for n in back)
+    ok = "state" in texts
+    print("REDIRECT_RETURNS_TO_APP:", ok)
+    if not ok:
+        failures.append("vk<ID>:// redirect did not reach the login screen")
+
 # Rotate (configChanges) and background/foreground (lifecycle observers, lock).
 adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
 adb("shell", "settings", "put", "system", "user_rotation", "1")

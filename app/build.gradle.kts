@@ -158,6 +158,7 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.biometric)
+    implementation(libs.androidx.webkit)
     implementation(libs.androidx.profileinstaller)
 
     implementation(libs.androidx.media3.exoplayer)

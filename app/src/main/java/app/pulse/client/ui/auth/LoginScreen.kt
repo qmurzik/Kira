@@ -14,6 +14,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.ui.platform.LocalContext
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import app.pulse.client.BuildConfig
 import app.pulse.client.ui.components.MessageBox
 import android.graphics.Bitmap
@@ -275,6 +277,11 @@ private fun AuthWebView(
                     settings.allowFileAccess = false
                     settings.allowContentAccess = false
                     settings.javaScriptCanOpenWindowsAutomatically = true
+                    // WebView adds "X-Requested-With: <package>" to every request; VK ID then applies
+                    // native-app rules to the page. Without it the page behaves as in a normal browser.
+                    if (WebViewFeature.isFeatureSupported(WebViewFeature.REQUESTED_WITH_HEADER_ALLOW_LIST)) {
+                        WebSettingsCompat.setRequestedWithHeaderOriginAllowList(settings, emptySet())
+                    }
                     webChromeClient = object : WebChromeClient() {
                         override fun onProgressChanged(view: WebView, newProgress: Int) {
                             progress = newProgress
