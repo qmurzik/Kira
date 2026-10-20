@@ -10,7 +10,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.style.TextOverflow
 import app.pulse.client.ui.navigation.LocalNavigator
@@ -23,7 +22,6 @@ fun AppTopBar(
     subtitle: String? = null,
     showBack: Boolean = true,
     onBack: (() -> Unit)? = null,
-    scrollBehavior: TopAppBarScrollBehavior? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val nav = LocalNavigator.current
@@ -49,7 +47,6 @@ fun AppTopBar(
             }
         },
         actions = actions,
-        scrollBehavior = scrollBehavior,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
             scrolledContainerColor = MaterialTheme.colorScheme.surface,

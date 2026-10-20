@@ -347,7 +347,7 @@ class MessagesRepository(
     private val ownerCache = ConcurrentHashMap<Long, Owner>()
 
     suspend fun owners(ids: Collection<Long>): Map<Long, Owner> {
-        val missing = ids.filter { it !in ownerCache }
+        val missing = ids.filter { !ownerCache.containsKey(it) }
         if (missing.isNotEmpty()) {
             ownersDao.get(missing).forEach { e ->
                 runCatching { json.decodeFromString(Owner.serializer(), e.data) }.getOrNull()?.let { ownerCache[it.id] = it }
