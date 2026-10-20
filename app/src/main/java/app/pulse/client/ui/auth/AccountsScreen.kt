@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.AlertDialog
@@ -70,7 +70,7 @@ fun AccountsScreen() {
                 ListRow(
                     title = "Выйти из текущего аккаунта",
                     subtitle = "Токены и кэш этого аккаунта будут удалены с устройства",
-                    leading = { Icon(Icons.AutoMirrored.Outlined.Logout, null, tint = MaterialTheme.colorScheme.error) },
+                    leading = { Icon(Icons.Outlined.Logout, null, tint = MaterialTheme.colorScheme.error) },
                     modifier = Modifier.clickable { confirmLogout = true },
                 )
             }

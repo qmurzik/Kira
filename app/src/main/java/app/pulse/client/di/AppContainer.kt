@@ -7,6 +7,8 @@ import app.pulse.client.data.auth.Account
 import app.pulse.client.data.auth.AccountStore
 import app.pulse.client.data.auth.VkIdAuth
 import app.pulse.client.data.settings.SettingsRepository
+import app.pulse.client.music.LocalAudioRepository
+import app.pulse.client.music.MusicController
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -51,6 +53,10 @@ class AppContainer(val app: Application) {
     val accounts = AccountStore(secureStore, json)
     val settings = SettingsRepository(app)
     val vkId = VkIdAuth(http, json, BuildConfig.VK_ID_HOST)
+
+    /** Music is not tied to a VK account (local files), so it lives app-wide. */
+    val music by lazy { MusicController(app) }
+    val localAudio by lazy { LocalAudioRepository(app) }
 
     private val _session = MutableStateFlow(accounts.active?.let { openSession(it.userId) })
     val session: StateFlow<UserSession?> = _session.asStateFlow()

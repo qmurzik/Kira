@@ -30,7 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
@@ -395,7 +395,7 @@ fun ChatScreen(peerId: Long) {
                         add(act("Повторить", Icons.Outlined.Refresh) { vm.retry(m) })
                     }
                     if (m.id > 0) {
-                        add(act("Ответить", Icons.AutoMirrored.Filled.Reply) { vm.reply(m) })
+                        add(act("Ответить", Icons.Filled.Reply) { vm.reply(m) })
                         add(act("Переслать", Icons.Outlined.Shortcut) {
                             vm.forward(listOf(m))
                             nav.open(Routes.FORWARD_PICK)

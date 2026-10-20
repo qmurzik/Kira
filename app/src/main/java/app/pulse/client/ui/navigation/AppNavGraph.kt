@@ -15,6 +15,7 @@ import app.pulse.client.ui.components.AppTopBar
 import app.pulse.client.ui.components.MessageBox
 import app.pulse.client.ui.messages.ChatScreen
 import app.pulse.client.ui.messages.DialogsScreen
+import app.pulse.client.ui.music.MusicScreen
 import app.pulse.client.ui.services.ServicesScreen
 import app.pulse.client.ui.video.ClipsScreen
 import app.pulse.client.ui.video.VideoPlayerScreen
@@ -102,7 +103,7 @@ fun AppNavGraph(nav: NavHostController) {
         }
         composable(Routes.BIRTHDAYS) { BirthdaysScreen() }
         composable(Routes.SEARCH) { SearchScreen() }
-        composable(Routes.MUSIC) { Pending("Музыка", 5) }
+        composable(Routes.MUSIC) { MusicScreen() }
         composable(Routes.NOTIFICATIONS) { Pending("Уведомления", 6) }
         composable(Routes.SETTINGS) { Pending("Настройки", 6) }
     }

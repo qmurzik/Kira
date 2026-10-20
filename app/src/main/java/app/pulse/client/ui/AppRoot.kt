@@ -20,7 +20,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.pulse.client.data.settings.AppSettings
 import app.pulse.client.di.AppContainer
+import app.pulse.client.music.PlaybackService
 import app.pulse.client.ui.auth.LoginScreen
+import app.pulse.client.ui.music.MiniPlayer
 import app.pulse.client.ui.navigation.AppNavGraph
 import app.pulse.client.ui.navigation.BottomBar
 import app.pulse.client.ui.navigation.LocalNavigator
@@ -62,6 +64,9 @@ private fun MainScaffold(container: AppContainer) {
     val route = entry?.destination?.route
     val tab = Tab.entries.firstOrNull { it.route == route }
 
+    val musicUi by container.music.ui.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { if (PlaybackService.isRunning) container.music.connect() }
+
     // Open a chat requested from a notification (switching account if needed).
     val pending by container.pendingChat.collectAsStateWithLifecycle()
     val myId = LocalSession.current.userId
@@ -81,7 +86,13 @@ private fun MainScaffold(container: AppContainer) {
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
-                if (tab != null) BottomBar(selected = tab, onSelect = navigator::tab)
+                Column {
+                    // Mini player everywhere except the music screen itself and full-screen video.
+                    if (musicUi.hasMedia && route != Routes.MUSIC && route != Routes.VIDEO_PLAYER && route != Routes.CLIPS) {
+                        MiniPlayer(musicUi, container.music, onOpen = { navigator.open(Routes.MUSIC) })
+                    }
+                    if (tab != null) BottomBar(selected = tab, onSelect = navigator::tab)
+                }
             },
         ) { padding ->
             Column(Modifier.padding(padding).consumeWindowInsets(padding)) {
