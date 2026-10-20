@@ -68,6 +68,9 @@ class AppContainer(val app: Application) {
     private val _expired = MutableStateFlow<Long?>(null)
     val expired: StateFlow<Long?> = _expired.asStateFlow()
 
+    /** VK ID redirect (vk<id>://vk.com/blank.html?...) delivered to MainActivity by the browser. */
+    val authRedirect = MutableStateFlow<String?>(null)
+
     /** (userId, peerId) of a chat to open, set when a message notification is tapped. */
     val pendingChat = MutableStateFlow<Pair<Long, Long>?>(null)
 

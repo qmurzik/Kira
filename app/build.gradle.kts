@@ -43,6 +43,8 @@ android {
         // VK ID app id is not a secret, but every user registers their own app,
         // so it is configurable and can also be entered on the login screen.
         buildConfigField("String", "VK_CLIENT_ID", "\"${prop("VK_CLIENT_ID")}\"")
+        // Browser login returns via vk<ID>://vk.com/blank.html, so the scheme is fixed at build time.
+        manifestPlaceholders["vkRedirectScheme"] = prop("VK_CLIENT_ID").let { if (it.isBlank()) "vkpulse" else "vk$it" }
         buildConfigField("String", "VK_ID_HOST", "\"${prop("VK_ID_HOST", "id.vk.ru")}\"")
         buildConfigField("String", "VK_API_HOST", "\"${prop("VK_API_HOST", "api.vk.com")}\"")
         buildConfigField("String", "VK_API_VERSION", "\"5.199\"")

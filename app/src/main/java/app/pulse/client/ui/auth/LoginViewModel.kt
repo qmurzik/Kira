@@ -20,6 +20,9 @@ class LoginViewModel(private val container: AppContainer) : ViewModel() {
     sealed interface State {
         data class Form(val clientId: String, val redirectUri: String, val error: String? = null) : State
         data class Web(val request: VkIdAuth.LoginRequest) : State
+
+        /** Login page opened in the system browser; waiting for the vk<ID>:// redirect. */
+        data class Browser(val request: VkIdAuth.LoginRequest) : State
         data object Exchanging : State
         data object Done : State
     }
@@ -37,30 +40,67 @@ class LoginViewModel(private val container: AppContainer) : ViewModel() {
         return State.Form(id, redirect, error)
     }
 
-    fun start(clientIdInput: String, redirectInput: String) {
+    /** The browser can only return to the scheme baked into the manifest at build time. */
+    val browserLoginAvailable: Boolean get() = BuildConfig.VK_CLIENT_ID.isNotBlank()
+
+    fun start(clientIdInput: String, redirectInput: String, inBrowser: Boolean = false) {
         val clientId = clientIdInput.trim()
         if (clientId.isEmpty() || !clientId.all { it.isDigit() }) {
             _state.value = State.Form(clientIdInput, redirectInput, "Укажите числовой ID вашего приложения VK ID")
             return
         }
+        if (inBrowser && clientId != BuildConfig.VK_CLIENT_ID) {
+            _state.value = State.Form(
+                clientIdInput,
+                redirectInput,
+                "Вход через браузер в этой сборке работает только для приложения ${BuildConfig.VK_CLIENT_ID.ifBlank { "—" }}",
+            )
+            return
+        }
         val redirect = redirectInput.trim().ifEmpty { container.vkId.defaultRedirectUri(clientId) }
         prefs.edit().putString("client_id", clientId).putString("redirect_uri", redirect).apply()
-        _state.value = State.Web(container.vkId.newLogin(clientId, redirect))
+        val request = container.vkId.newLogin(clientId, redirect)
+        savePending(request)
+        _state.value = if (inBrowser) State.Browser(request) else State.Web(request)
+    }
+
+    /** Switch from the WebView to the system browser with the same PKCE request. */
+    fun switchToBrowser() {
+        val web = _state.value as? State.Web ?: return
+        _state.value = State.Browser(web.request)
     }
 
     /** Returns true if the WebView must not load [url] (it is our redirect). */
     fun onNavigate(url: String): Boolean {
-        val web = _state.value as? State.Web ?: return false
+        val request = (_state.value as? State.Web)?.request ?: return false
+        return handle(request, url)
+    }
+
+    /** Redirect delivered by the browser to MainActivity. Survives process death via [loadPending]. */
+    fun onBrowserRedirect(url: String) {
+        val request = (_state.value as? State.Browser)?.request
+            ?: (_state.value as? State.Web)?.request
+            ?: loadPending()
+            ?: run {
+                _state.value = initialForm("Запрос входа устарел, начните заново")
+                return
+            }
+        handle(request, url)
+    }
+
+    private fun handle(request: VkIdAuth.LoginRequest, url: String): Boolean {
         val callback = try {
-            container.vkId.parseCallback(web.request, url) ?: return false
+            container.vkId.parseCallback(request, url) ?: return false
         } catch (e: VkIdAuth.AuthException) {
+            clearPending()
             _state.value = initialForm(e.message)
             return true
         }
+        clearPending()
         _state.value = State.Exchanging
         viewModelScope.launch {
             try {
-                var account = container.vkId.exchange(web.request, callback)
+                var account = container.vkId.exchange(request, callback)
                 // Fill name/avatar for the account switcher.
                 val token = account.accessToken
                 val api = VkApi(container.http, container.json, BuildConfig.VK_API_HOST, BuildConfig.VK_API_VERSION,
@@ -85,7 +125,23 @@ class LoginViewModel(private val container: AppContainer) : ViewModel() {
         return true
     }
 
-    fun backToForm() {
-        _state.value = initialForm()
+    fun backToForm(error: String? = null) {
+        clearPending()
+        _state.value = initialForm(error)
+    }
+
+    // PKCE verifier and state are kept encrypted until the redirect comes back.
+    private fun savePending(r: VkIdAuth.LoginRequest) {
+        container.secureStore.putString(KEY_PENDING, container.json.encodeToString(VkIdAuth.LoginRequest.serializer(), r))
+    }
+
+    private fun loadPending(): VkIdAuth.LoginRequest? = container.secureStore.getString(KEY_PENDING)?.let {
+        runCatching { container.json.decodeFromString(VkIdAuth.LoginRequest.serializer(), it) }.getOrNull()
+    }
+
+    private fun clearPending() = container.secureStore.remove(KEY_PENDING)
+
+    private companion object {
+        const val KEY_PENDING = "pending_login"
     }
 }

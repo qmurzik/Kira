@@ -12,7 +12,7 @@ import time
 import xml.etree.ElementTree as ET
 
 APK, OUT = sys.argv[1], sys.argv[2]
-PKG = "app.pulse.client"
+PKG = sys.argv[3] if len(sys.argv) > 3 else "app.pulse.client"
 ACTIVITY = f"{PKG}/.MainActivity"
 os.makedirs(OUT, exist_ok=True)
 failures = []
@@ -104,17 +104,20 @@ if "Войти через VK ID" not in texts:
 edit = next((n for n in nodes if n.get("class") == "android.widget.EditText"), None)
 button = next((n for n in nodes if n.get("text") == "Войти через VK ID"), None)
 if edit and button:
-    adb("shell", "input", "tap", *map(str, center(edit)))
-    time.sleep(1)
-    adb("shell", "input", "text", "51234567")
-    time.sleep(1)
+    if not (edit.get("text") or "").isdigit():
+        adb("shell", "input", "tap", *map(str, center(edit)))
+        time.sleep(1)
+        adb("shell", "input", "text", "51234567")
+        time.sleep(1)
     adb("shell", "input", "keyevent", "111")  # ESC: hide keyboard
     time.sleep(1)
     nodes = dump_ui("02_filled")
     button = next((n for n in nodes if n.get("text") == "Войти через VK ID"), button)
     adb("shell", "input", "tap", *map(str, center(button)))
-    time.sleep(12)
+    time.sleep(20)
     dump_ui("03_vkid_webview")
+    web = adb("logcat", "-d", "-s", "PulseWeb:W")
+    print("WEBVIEW LOG:\n" + "\n".join(l for l in web.splitlines() if "PulseWeb" in l)[:6000])
     # Back to the form.
     adb("shell", "input", "keyevent", "4")
     time.sleep(2)

@@ -1,6 +1,21 @@
 package app.pulse.client.ui.auth
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.util.Log
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceResponse
+import androidx.compose.material.icons.outlined.OpenInBrowser
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.ui.platform.LocalContext
+import app.pulse.client.BuildConfig
+import app.pulse.client.ui.components.MessageBox
 import android.graphics.Bitmap
 import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
@@ -75,8 +90,23 @@ fun LoginScreen(addAccount: Boolean, onDone: () -> Unit, onCancel: (() -> Unit)?
         }
     }
 
+    // Redirect from the system browser (vk<ID>://vk.com/blank.html?code=...).
+    val redirect by container.authRedirect.collectAsStateWithLifecycle()
+    LaunchedEffect(redirect) {
+        redirect?.let {
+            container.authRedirect.value = null
+            vm.onBrowserRedirect(it)
+        }
+    }
+
     when (val s = state) {
-        is LoginViewModel.State.Form -> LoginForm(s, onStart = vm::start, onCancel = onCancel)
+        is LoginViewModel.State.Form -> LoginForm(
+            s,
+            browserAvailable = vm.browserLoginAvailable,
+            onStart = { id, uri, browser -> vm.start(id, uri, browser) },
+            onCancel = onCancel,
+        )
+        is LoginViewModel.State.Browser -> BrowserWait(s.request.url, onCancel = { vm.backToForm() })
         is LoginViewModel.State.Web -> {
             BackHandler { vm.backToForm() }
             Scaffold(
@@ -84,8 +114,13 @@ fun LoginScreen(addAccount: Boolean, onDone: () -> Unit, onCancel: (() -> Unit)?
                     TopAppBar(
                         title = { Text("Вход через VK ID") },
                         navigationIcon = {
-                            IconButton(onClick = vm::backToForm) {
+                            IconButton(onClick = { vm.backToForm() }) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                            }
+                        },
+                        actions = {
+                            if (vm.browserLoginAvailable) {
+                                TextButton(onClick = vm::switchToBrowser) { Text("В браузере") }
                             }
                         },
                     )
@@ -95,6 +130,8 @@ fun LoginScreen(addAccount: Boolean, onDone: () -> Unit, onCancel: (() -> Unit)?
                     url = s.request.url,
                     clearCookies = addAccount,
                     onNavigate = vm::onNavigate,
+                    browserAvailable = vm.browserLoginAvailable,
+                    onOpenBrowser = vm::switchToBrowser,
                     modifier = Modifier.padding(padding).fillMaxSize(),
                 )
             }
@@ -106,7 +143,8 @@ fun LoginScreen(addAccount: Boolean, onDone: () -> Unit, onCancel: (() -> Unit)?
 @Composable
 private fun LoginForm(
     form: LoginViewModel.State.Form,
-    onStart: (String, String) -> Unit,
+    browserAvailable: Boolean,
+    onStart: (String, String, Boolean) -> Unit,
     onCancel: (() -> Unit)?,
 ) {
     var clientId by rememberSaveable(form.clientId) { mutableStateOf(form.clientId) }
@@ -165,8 +203,13 @@ private fun LoginForm(
             form.error?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
-            Button(onClick = { onStart(clientId, redirect) }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            Button(onClick = { onStart(clientId, redirect, false) }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
                 Text("Войти через VK ID")
+            }
+            if (browserAvailable) {
+                OutlinedButton(onClick = { onStart(clientId, redirect, true) }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                    Text("Войти через браузер")
+                }
             }
             if (onCancel != null) {
                 TextButton(onClick = onCancel) { Text("Отмена") }
@@ -181,46 +224,143 @@ private fun LoginForm(
     }
 }
 
+@Composable
+private fun BrowserWait(url: String, onCancel: () -> Unit) {
+    val context = LocalContext.current
+    val open = {
+        runCatching {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE))
+        }
+        Unit
+    }
+    LaunchedEffect(url) { open() }
+    BackHandler(onBack = onCancel)
+    MessageBox(
+        title = "Завершите вход в браузере",
+        text = "После входа VK ID вернёт вас в приложение. Если браузер не открылся или вы его закрыли — откройте снова.",
+        icon = Icons.Outlined.OpenInBrowser,
+        actionLabel = "Открыть снова",
+        onAction = open,
+        modifier = Modifier.statusBarsPadding(),
+    )
+}
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun AuthWebView(
     url: String,
     clearCookies: Boolean,
     onNavigate: (String) -> Boolean,
+    browserAvailable: Boolean,
+    onOpenBrowser: () -> Unit,
     modifier: Modifier,
 ) {
     val loaded = remember { mutableStateOf(false) }
-    AndroidView(
-        modifier = modifier,
-        factory = { ctx ->
-            if (clearCookies) {
-                CookieManager.getInstance().removeAllCookies(null)
-            }
-            WebView(ctx).apply {
-                settings.javaScriptEnabled = true // the VK ID page requires JS
-                settings.domStorageEnabled = true
-                settings.allowFileAccess = false
-                settings.allowContentAccess = false
-                webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
-                        onNavigate(request.url.toString())
-
-                    @Deprecated("Deprecated in Java")
-                    override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean = onNavigate(url)
-
-                    override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
-                        // Some WebView versions skip shouldOverrideUrlLoading for redirects.
-                        if (onNavigate(url)) view.stopLoading()
-                    }
+    var progress by remember { mutableStateOf(0) }
+    var error by remember { mutableStateOf<String?>(null) }
+    Box(modifier) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                if (clearCookies) {
+                    CookieManager.getInstance().removeAllCookies(null)
                 }
-                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
+                WebView(ctx).apply {
+                    settings.javaScriptEnabled = true // the VK ID page requires JS
+                    settings.domStorageEnabled = true
+                    settings.databaseEnabled = true
+                    settings.allowFileAccess = false
+                    settings.allowContentAccess = false
+                    settings.javaScriptCanOpenWindowsAutomatically = true
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onProgressChanged(view: WebView, newProgress: Int) {
+                            progress = newProgress
+                        }
+
+                        override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                            if (BuildConfig.DEBUG) {
+                                Log.w(WEB_TAG, "console ${message.messageLevel()}: ${message.message().take(300)} @${message.lineNumber()}")
+                            }
+                            return true
+                        }
+                    }
+                    webViewClient = object : WebViewClient() {
+                        private fun route(view: WebView, target: String): Boolean {
+                            if (onNavigate(target)) return true
+                            val scheme = Uri.parse(target).scheme.orEmpty()
+                            if (scheme == "http" || scheme == "https") return false
+                            // intent://, vkontakte:// etc. cannot load inside a WebView.
+                            if (BuildConfig.DEBUG) Log.w(WEB_TAG, "non-web navigation: scheme=$scheme")
+                            runCatching {
+                                val intent = if (scheme == "intent") {
+                                    Intent.parseUri(target, Intent.URI_INTENT_SCHEME)
+                                } else {
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(target))
+                                }
+                                view.context.startActivity(intent.addCategory(Intent.CATEGORY_BROWSABLE).setComponent(null).setSelector(null))
+                            }
+                            return true
+                        }
+
+                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
+                            route(view, request.url.toString())
+
+                        @Deprecated("Deprecated in Java")
+                        override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean = route(view, url)
+
+                        override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                            // Some WebView versions skip shouldOverrideUrlLoading for redirects.
+                            if (onNavigate(url)) view.stopLoading()
+                        }
+
+                        override fun onPageFinished(view: WebView, url: String) {
+                            if (!BuildConfig.DEBUG) return
+                            Log.w(WEB_TAG, "finished host=${Uri.parse(url).host} path=${Uri.parse(url).path}")
+                            view.evaluateJavascript(
+                                "(function(){var b=document.body;return (b?b.innerText.length:-1)+'|'+(b?b.innerText.slice(0,400):'')+'|'+navigator.userAgent})()"
+                            ) { Log.w(WEB_TAG, "page text: $it") }
+                        }
+
+                        override fun onReceivedError(view: WebView, request: WebResourceRequest, err: WebResourceError) {
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+                            if (BuildConfig.DEBUG) {
+                                Log.w(WEB_TAG, "error ${err.errorCode} ${err.description} main=${request.isForMainFrame} host=${request.url.host}")
+                            }
+                            if (request.isForMainFrame) error = "${err.description} (${err.errorCode})"
+                        }
+
+                        override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
+                            if (BuildConfig.DEBUG) {
+                                Log.w(WEB_TAG, "http ${response.statusCode} main=${request.isForMainFrame} host=${request.url.host} path=${request.url.path}")
+                            }
+                            if (request.isForMainFrame) error = "Сервер VK ID ответил ${response.statusCode}"
+                        }
+                    }
+                    CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                }
+            },
+            update = { web ->
+                if (!loaded.value) {
+                    loaded.value = true
+                    web.loadUrl(url)
+                }
+            },
+        )
+        if (progress in 1..99) {
+            LinearProgressIndicator(progress = { progress / 100f }, modifier = Modifier.fillMaxWidth())
+        }
+        error?.let { e ->
+            Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+                MessageBox(
+                    title = "Страница VK ID не загрузилась",
+                    text = e + if (browserAvailable) "\nПопробуйте войти через браузер." else "",
+                    actionLabel = if (browserAvailable) "Открыть в браузере" else null,
+                    onAction = if (browserAvailable) onOpenBrowser else null,
+                )
             }
-        },
-        update = { web ->
-            if (!loaded.value) {
-                loaded.value = true
-                web.loadUrl(url)
-            }
-        },
-    )
+        }
+    }
 }
+
+private const val WEB_TAG = "PulseWeb"

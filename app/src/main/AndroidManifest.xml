@@ -40,6 +40,16 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- VK ID returns here after login in the system browser: vk<ID>://vk.com/blank.html -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="${vkRedirectScheme}"
+                    android:host="vk.com"
+                    android:path="/blank.html" />
+            </intent-filter>
         </activity>
 
         <receiver

@@ -9,6 +9,11 @@ concurrency:
   group: vklite-build-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # ID of the owner's VK ID app (public, it is part of every authorize URL).
+  # Bakes vk<ID>://vk.com/blank.html into the manifest for the browser login flow.
+  VK_CLIENT_ID: "54837133"
+
 jobs:
   build:
     name: Static checks, debug + release APK
@@ -102,6 +107,11 @@ jobs:
           name: vklite-release-apk-debugsigned
           path: apk
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: vklite-debug-apk
+          path: apk-debug
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -116,13 +126,17 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
-          script: python3 scripts/smoke_test.py apk/app-release.apk smoke-out
+          script: |
+            python3 scripts/smoke_test.py apk/app-release.apk smoke-out
+            if [ "${{ matrix.api }}" = "34" ]; then python3 scripts/smoke_test.py apk-debug/app-debug.apk smoke-debug app.pulse.client.debug; fi
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: smoke-api${{ matrix.api }}
-          path: smoke-out
+          path: |
+            smoke-out
+            smoke-debug
           if-no-files-found: ignore
           retention-days: 14
 

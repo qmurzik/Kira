@@ -66,6 +66,12 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
+        val data = intent?.data
+        if (intent?.action == Intent.ACTION_VIEW && data != null && data.scheme?.startsWith("vk") == true) {
+            (application as PulseApp).container.authRedirect.value = data.toString()
+            intent?.data = null
+            return
+        }
         val peer = intent?.getLongExtra(Notifier.EXTRA_OPEN_PEER, 0L) ?: 0L
         val user = intent?.getLongExtra(Notifier.EXTRA_USER, 0L) ?: 0L
         if (peer != 0L && user != 0L) {

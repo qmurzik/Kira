@@ -22,6 +22,7 @@ import okhttp3.Request
  */
 class VkIdAuth(private val http: OkHttpClient, private val json: Json, private val host: String) {
 
+    @Serializable
     data class LoginRequest(
         val clientId: String,
         val redirectUri: String,
