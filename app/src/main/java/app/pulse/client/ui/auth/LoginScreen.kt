@@ -215,8 +215,9 @@ private fun LoginForm(
                 TextButton(onClick = onCancel) { Text("Отмена") }
             }
             Text(
-                "ID и Redirect URL берутся из кабинета VK ID (id.vk.ru → ваше приложение). " +
-                    "Подробнее — в README проекта.",
+                "ID берётся из кабинета VK ID (id.vk.ru → ваше приложение). " +
+                    "В кабинете в «Названии пакета» должно быть: ${BuildConfig.APPLICATION_ID}. " +
+                    "Без этого страница VK ID внутри приложения остаётся пустой.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -258,6 +259,7 @@ private fun AuthWebView(
     val loaded = remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf(0) }
     var error by remember { mutableStateOf<String?>(null) }
+    var blank by remember { mutableStateOf(false) }
     Box(modifier) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
@@ -313,11 +315,18 @@ private fun AuthWebView(
                         override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean = route(view, url)
 
                         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                            blank = false
                             // Some WebView versions skip shouldOverrideUrlLoading for redirects.
                             if (onNavigate(url)) view.stopLoading()
                         }
 
                         override fun onPageFinished(view: WebView, url: String) {
+                            // VK ID renders nothing when the app package is not registered in its cabinet.
+                            view.postDelayed({
+                                view.evaluateJavascript("document.body?document.body.innerText.trim().length:0") { len ->
+                                    if (len == "0") blank = true
+                                }
+                            }, 5_000)
                             if (!BuildConfig.DEBUG) return
                             Log.w(WEB_TAG, "finished host=${Uri.parse(url).host} path=${Uri.parse(url).path}")
                             view.evaluateJavascript(
@@ -352,6 +361,18 @@ private fun AuthWebView(
         )
         if (progress in 1..99) {
             LinearProgressIndicator(progress = { progress / 100f }, modifier = Modifier.fillMaxWidth())
+        }
+        if (blank && error == null) {
+            Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+                MessageBox(
+                    title = "VK ID не показал страницу входа",
+                    text = "Проверьте в кабинете id.vk.ru → ваше приложение → «Название пакета»: " +
+                        "там должно быть ${BuildConfig.APPLICATION_ID}." +
+                        if (browserAvailable) "\nИли войдите через браузер." else "",
+                    actionLabel = if (browserAvailable) "Открыть в браузере" else null,
+                    onAction = if (browserAvailable) onOpenBrowser else null,
+                )
+            }
         }
         error?.let { e ->
             Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {

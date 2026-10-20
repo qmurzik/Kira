@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 APK, OUT = sys.argv[1], sys.argv[2]
 PKG = sys.argv[3] if len(sys.argv) > 3 else "app.pulse.client"
-ACTIVITY = f"{PKG}/.MainActivity"
+ACTIVITY = f"{PKG}/app.pulse.client.MainActivity"  # namespace differs from applicationId in debug
 os.makedirs(OUT, exist_ok=True)
 failures = []
 
@@ -115,7 +115,9 @@ if edit and button:
     button = next((n for n in nodes if n.get("text") == "Войти через VK ID"), button)
     adb("shell", "input", "tap", *map(str, center(button)))
     time.sleep(20)
-    dump_ui("03_vkid_webview")
+    page = dump_ui("03_vkid_webview")
+    rendered = any((n.get("text") or "") == "Продолжить" for n in page)
+    print("VKID_PAGE_RENDERED:", rendered, "(needs this package registered in the VK ID cabinet)")
     web = adb("logcat", "-d", "-s", "PulseWeb:W")
     print("WEBVIEW LOG:\n" + "\n".join(l for l in web.splitlines() if "PulseWeb" in l)[:6000])
     # Back to the form.

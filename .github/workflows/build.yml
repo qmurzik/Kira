@@ -41,6 +41,34 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
+      # Stable signing key without committing it: kept in the Actions cache of this repo.
+      # Same key for every build => the SHA-1 in the VK ID cabinet stays valid and updates install
+      # over the previous version. If the cache is ever evicted a new key is generated (reinstall once).
+      - name: Restore signing key
+        id: keystore
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: pulse-signing-keystore-v1
+
+      - name: Create signing key
+        if: steps.keystore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.android
+          keytool -genkeypair -v -keystore ~/.android/debug.keystore -storepass android -keypass android \
+            -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Pulse, O=Pulse, C=RU"
+
+      - name: Save signing key
+        if: steps.keystore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: pulse-signing-keystore-v1
+
+      - name: Signing certificate fingerprints
+        run: keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey | grep -E "SHA1|SHA256"
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
