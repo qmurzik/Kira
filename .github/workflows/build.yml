@@ -1,0 +1,83 @@
+name: VKLite (Пульс) - Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch: {}
+
+concurrency:
+  group: vklite-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Static checks, debug + release APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Static project checks (no SDK needed)
+        run: python3 scripts/check_project.py
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-35" "build-tools;34.0.0" "build-tools;35.0.0" "platform-tools"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Assemble debug
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest --stacktrace
+
+      # Release = R8 + resource shrinking. Signed with the debug key unless
+      # keystore secrets are configured: for size measurement and side-loading only.
+      - name: Assemble release (R8)
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Lint (report only)
+        run: ./gradlew lintDebug --stacktrace
+
+      - name: APK sizes
+        run: |
+          {
+            echo "### APK sizes"
+            echo '```'
+            ls -l app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vklite-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vklite-release-apk-debugsigned
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vklite-lint-report
+          path: app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore
+          retention-days: 14
