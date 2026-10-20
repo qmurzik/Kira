@@ -63,3 +63,30 @@
 | Push-уведомления в реальном времени | `account.registerDevice` (FCM) | — | **недоступно**: регистрация push VK для сторонних приложений не предусмотрена. Замена: Long Poll на переднем плане и WorkManager-проверка `messages.getConversations(filter=unread)` раз в 15+ минут |
 | Ответ из шторки, «Прочитано» | `messages.send`, `messages.markAsRead` из BroadcastReceiver | messages | не проверено |
 | Онлайн-статус в реальном времени (события 8/9) | — | — | не реализовано: статус обновляется при обновлении диалога |
+
+## Лента, профиль, друзья (этап 3)
+
+| Функция | Метод | Права | Статус |
+|---|---|---|---|
+| Новости (бесконечная прокрутка, кэш Room + Paging 3 RemoteMediator) | `newsfeed.get` (filters=post, start_from) | wall, friends | реализовано, не проверено |
+| Рекомендации | `newsfeed.getRecommended` (start_from) | wall | не проверено (доступность метода для стороннего приложения под вопросом) |
+| Истории | `stories.get` (extended=1), `stories.markSeen` | stories | не проверено; без права `stories` ряд просто скрыт |
+| Лайк записи / комментария | `likes.add` / `likes.delete` (type=post/comment) | wall | реализовано |
+| Репост к себе | `wall.repost` (object=wall{owner}_{id}) | wall | реализовано |
+| Запись целиком | `wall.getById` (extended=1) | wall | реализовано |
+| Комментарии и ветки | `wall.getComments` (need_likes, thread_items_count=3) | wall | реализовано |
+| Написать комментарий / ответ | `wall.createComment` (reply_to_comment) | wall | реализовано |
+| Создание записи с фото | `photos.getWallUploadServer` → upload `photo` → `photos.saveWallPhoto` → `wall.post` (friends_only) | wall, photos | реализовано |
+| Поиск по записям | `newsfeed.search` | wall | реализовано |
+| Профиль пользователя | `users.get` (counters, status, last_seen, friend_status…) | vkid.personal_info, friends | реализовано |
+| Профиль сообщества | `groups.getById` (description, members_count, is_member) | groups | реализовано (оба формата ответа: `{groups:[…]}` и массив) |
+| Стена | `wall.get` (extended=1) | wall | реализовано |
+| Фото | `photos.getAll` (photo_sizes=1) | photos | реализовано |
+| Друзья, онлайн, поиск среди друзей | `friends.get` (order=hints, fields) | friends | реализовано |
+| Заявки в друзья | `friends.getRequests` + `users.get`; `friends.add` / `friends.delete` | friends | реализовано |
+| Сообщества пользователя | `groups.get` (extended=1) | groups | реализовано |
+| Вступить / выйти | `groups.join` / `groups.leave` | groups | реализовано |
+| Поиск людей | `users.search` | friends | реализовано |
+| Поиск сообществ | `groups.search` | groups | реализовано |
+| Дни рождения | `friends.get` (fields=bdate), сортировка локально | friends | реализовано |
+| Редактирование своего профиля | `account.saveProfileInfo` | — | не реализовано: метод закрыт для сторонних приложений по данным открытых источников, кнопка ведёт в настройки приложения |

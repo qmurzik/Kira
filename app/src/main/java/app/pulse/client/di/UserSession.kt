@@ -6,8 +6,10 @@ import app.pulse.client.data.api.VkApi
 import app.pulse.client.data.api.dto.UserDto
 import app.pulse.client.data.db.AppDatabase
 import app.pulse.client.data.mapper.fullName
+import app.pulse.client.data.repo.FeedRepository
 import app.pulse.client.data.repo.LongPollClient
 import app.pulse.client.data.repo.MessagesRepository
+import app.pulse.client.data.repo.ProfileRepository
 import app.pulse.client.domain.model.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +39,8 @@ class UserSession(val userId: Long, private val container: AppContainer) : Sessi
     val db: AppDatabase by dbLazy
 
     val messages: MessagesRepository by lazy { MessagesRepository(api, db, container.json, userId) }
+    val feed: FeedRepository by lazy { FeedRepository(api, db, container.json) }
+    val profiles: ProfileRepository by lazy { ProfileRepository(api, userId) }
 
     private var longPoll: LongPollClient? = null
 

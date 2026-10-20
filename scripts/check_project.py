@@ -34,7 +34,7 @@ def kotlin_files():
 # ---------- 1. project symbols ----------
 decl_re = re.compile(
     r"^(?:@[\w.]+(?:\([^)]*\))?\s+)*(?:(?:private|internal|public|data|sealed|enum|abstract|open|inline|value|annotation|fun|suspend|const|operator|infix|tailrec)\s+)*"
-    r"(class|interface|object|fun|val|var|typealias)\s+(?:<[^>]+>\s*)?(?:[\w.]+\.)?(`?\w+`?)",
+    r"(class|interface|object|fun|val|var|typealias)\s+(?:<[^>]+>\s*)?(?:[\w.<>, ?*]+?\.)?(`?\w+`?)\s*[(:=<{]?",
     re.M,
 )
 symbols = {}  # package -> set(names)
@@ -207,6 +207,16 @@ for path in kotlin_files():
             continue  # used implicitly by `by` delegation
         if not re.search(r"\b" + re.escape(name) + r"\b", body):
             warnings.append(f"{os.path.relpath(path, ROOT)}: unused import {imp}")
+
+if "--fix-imports" in sys.argv:
+    for w in warnings:
+        rel, _, imp = w.partition(": unused import ")
+        if imp:
+            fp = os.path.join(ROOT, rel)
+            lines = open(fp, encoding="utf-8").read().split("\n")
+            lines = [l for l in lines if l.strip() != f"import {imp}"]
+            open(fp, "w", encoding="utf-8").write("\n".join(lines))
+    warnings = [w for w in warnings if ": unused import " not in w]
 
 for w in warnings:
     print("WARN ", w)
