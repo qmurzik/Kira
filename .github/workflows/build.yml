@@ -1,4 +1,4 @@
-name: VKLite (Пульс) - Build
+name: VK Lite - Build
 
 on:
   push:
@@ -190,14 +190,14 @@ jobs:
           path: out/debug
       - name: Rename
         run: |
-          mv out/release/app-release.apk out/pulse-release.apk
-          mv out/debug/app-debug.apk out/pulse-debug.apk
+          mv out/release/app-release.apk out/vk-lite-release.apk
+          mv out/debug/app-debug.apk out/vk-lite-debug.apk
           ls -l out/*.apk
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: vk-lite-latest
           target_commitish: ${{ github.sha }}
-          name: "Пульс (VK Lite) — сборка ${{ github.run_number }}"
+          name: "VK Lite — сборка ${{ github.run_number }}"
           prerelease: true
           make_latest: false
           body: |
@@ -205,8 +205,8 @@ jobs:
             Прошла smoke-тест на эмуляторах API 21 и 34 (запуск, экран входа, переход на VK ID, без падений).
             На реальном устройстве и с реальным входом не проверялась — см. docs/UNVERIFIED.md.
 
-            - `pulse-release.apk` — R8, подписан debug-ключом (для установки себе, не для публикации).
-            - `pulse-debug.apk` — отладочная сборка.
+            - `vk-lite-release.apk` — R8, подписан debug-ключом (для установки себе, не для публикации).
+            - `vk-lite-debug.apk` — отладочная сборка.
           files: |
-            out/pulse-release.apk
-            out/pulse-debug.apk
+            out/vk-lite-release.apk
+            out/vk-lite-debug.apk

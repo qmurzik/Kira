@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Пульс</string>
+    <string name="app_name">VK Lite</string>
 
     <string name="channel_messages">Сообщения</string>
     <string name="channel_messages_desc">Новые личные сообщения и беседы</string>

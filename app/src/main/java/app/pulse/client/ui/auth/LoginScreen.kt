@@ -172,7 +172,7 @@ private fun LoginForm(
             ) {
                 Image(painterResource(R.drawable.ic_launcher_foreground), contentDescription = null)
             }
-            Text("Пульс", style = MaterialTheme.typography.titleLarge)
+            Text("VK Lite", style = MaterialTheme.typography.titleLarge)
             Text(
                 "Неофициальный лёгкий клиент. Вход выполняется на странице VK ID, пароль приложению не передаётся.",
                 style = MaterialTheme.typography.bodyMedium,

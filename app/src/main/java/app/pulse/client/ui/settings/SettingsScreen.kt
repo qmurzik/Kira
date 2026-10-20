@@ -296,7 +296,7 @@ fun SettingsScreen() {
             item { ThinDivider() }
             item {
                 Text(
-                    "Пульс ${BuildConfig.VERSION_NAME} · неофициальный клиент, работает через официальный VK API " +
+                    "VK Lite ${BuildConfig.VERSION_NAME} · неофициальный клиент, работает через официальный VK API " +
                         "(версия ${BuildConfig.VK_API_VERSION}). Что недоступно через API — в docs/API-COVERAGE.md.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
