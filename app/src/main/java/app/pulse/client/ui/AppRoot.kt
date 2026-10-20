@@ -22,6 +22,7 @@ import app.pulse.client.data.settings.AppSettings
 import app.pulse.client.di.AppContainer
 import app.pulse.client.music.PlaybackService
 import app.pulse.client.ui.auth.LoginScreen
+import app.pulse.client.ui.components.LocalDataSaver
 import app.pulse.client.ui.music.MiniPlayer
 import app.pulse.client.ui.navigation.AppNavGraph
 import app.pulse.client.ui.navigation.BottomBar
@@ -36,7 +37,7 @@ import app.pulse.client.ui.theme.PulseTheme
 fun AppRoot(container: AppContainer, content: @Composable (AppSettings, @Composable () -> Unit) -> Unit = { _, c -> c() }) {
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     PulseTheme(settings.theme, settings.fontScale) {
-        CompositionLocalProvider(LocalAppContainer provides container) {
+        CompositionLocalProvider(LocalAppContainer provides container, LocalDataSaver provides settings.dataSaver) {
             Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
                 content(settings) {
                     val session by container.session.collectAsStateWithLifecycle()

@@ -70,6 +70,7 @@ import app.pulse.client.domain.model.VideoItem
 import app.pulse.client.ui.LocalSession
 import app.pulse.client.ui.components.ErrorBox
 import app.pulse.client.ui.components.LoadingBox
+import app.pulse.client.ui.components.LocalDataSaver
 import app.pulse.client.ui.components.openUrl
 import app.pulse.client.ui.navigation.LocalNavigator
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -200,8 +201,15 @@ private fun NativePlayer(
     val context = LocalContext.current
     val labels = v.files.keys.toList()
     // Default: HLS (adaptive) if present, otherwise 720p or the best below it.
+    val saver = LocalDataSaver.current
     var quality by rememberSaveable(v.apiId) {
-        mutableStateOf(labels.firstOrNull { it.startsWith("Авто") } ?: labels.firstOrNull { it == "720p" } ?: labels.first())
+        mutableStateOf(
+            if (saver) {
+                labels.firstOrNull { it == "360p" } ?: labels.last()
+            } else {
+                labels.firstOrNull { it.startsWith("Авто") } ?: labels.firstOrNull { it == "720p" } ?: labels.first()
+            }
+        )
     }
     var menu by remember { mutableStateOf(false) }
     val player = remember(v.apiId) { ExoPlayer.Builder(context).build() }

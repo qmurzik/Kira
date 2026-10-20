@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.pulse.client.ui.theme.AppTheme
 import coil.compose.AsyncImage
+
+/** "Экономия трафика": smaller images and lower default video quality. */
+val LocalDataSaver = staticCompositionLocalOf { false }
 
 private val avatarPalette = listOf(
     Color(0xFF7B6CF6), Color(0xFF2FB7A0), Color(0xFFF08A3C), Color(0xFFE25C7E),

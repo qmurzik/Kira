@@ -9,6 +9,7 @@ import app.pulse.client.data.mapper.fullName
 import app.pulse.client.data.repo.FeedRepository
 import app.pulse.client.data.repo.LongPollClient
 import app.pulse.client.data.repo.MessagesRepository
+import app.pulse.client.data.repo.NotificationsRepository
 import app.pulse.client.data.repo.ProfileRepository
 import app.pulse.client.data.repo.VideoRepository
 import app.pulse.client.domain.model.Message
@@ -43,6 +44,7 @@ class UserSession(val userId: Long, private val container: AppContainer) : Sessi
     val feed: FeedRepository by lazy { FeedRepository(api, db, container.json) }
     val profiles: ProfileRepository by lazy { ProfileRepository(api, userId) }
     val videos: VideoRepository by lazy { VideoRepository(api, userId) }
+    val notifications: NotificationsRepository by lazy { NotificationsRepository(api) }
 
     private var longPoll: LongPollClient? = null
 

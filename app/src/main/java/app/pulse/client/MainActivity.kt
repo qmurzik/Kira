@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.fragment.app.FragmentActivity
 import app.pulse.client.notifications.Notifier
 import app.pulse.client.ui.AppRoot
+import app.pulse.client.ui.settings.LockGate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,7 +31,9 @@ class MainActivity : FragmentActivity() {
         val container = (application as PulseApp).container
         addOnPictureInPictureModeChangedListener { info -> _pip.value = info.isInPictureInPictureMode }
         handleIntent(intent)
-        setContent { AppRoot(container) }
+        setContent {
+            AppRoot(container) { settings, content -> LockGate(settings, content) }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -95,6 +95,40 @@ app/src/main/java/app/pulse/client/
 треки, альбомы, исполнители, поиск, очередь, перемешивание и повтор, фоновое воспроизведение через
 Media3 `MediaSessionService` с системным медиа-уведомлением и мини-плеер над нижней панелью.
 
+## Уведомления и настройки
+
+- Центр уведомлений (`notifications.get`) с заявками в друзья сверху, подгрузкой и отметкой просмотра.
+- Настройки: тема (системная, светлая, тёмная), размер шрифта, фоновые уведомления и их частота,
+  скрытие текста в уведомлениях, отправка «прочитано» и «печатает», запрет снимков экрана,
+  PIN-код и биометрия с тайм-аутом блокировки, автовоспроизведение, экономия трафика,
+  размер и очистка кэша, экспорт и импорт настроек в JSON. PIN и токены в экспорт не попадают.
+
+## Скорость и размер: как измерить
+
+Цель: release-APK заметно меньше 15 МБ и быстрый холодный старт. **Ничего из этого не замерялось.**
+
+Что сделано для скорости:
+- R8 (`isMinifyEnabled`) и `isShrinkResources`, только локали `ru`/`en`, без Hilt и рефлексии.
+- `profileinstaller` + `app/src/main/baseline-prof.txt` для кода приложения
+  (у AndroidX и Compose свои профили внутри библиотек).
+- Холодный старт: в `Application` только создание контейнера. Сеть, БД и Long Poll запускаются лениво.
+  Тема окна без splash-библиотеки.
+- Списки: стабильные `key`/`contentType`, `@Immutable`-модели, ленты из Room-кэша, один `ImageLoader`
+  с общим пулом соединений OkHttp.
+
+Как измерить:
+1. Размер: `./gradlew assembleRelease`, затем
+   `$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer apk summary app/build/outputs/apk/release/app-release.apk`
+   (или Build → Analyze APK в Android Studio).
+2. Холодный старт на устройстве:
+   `adb shell am force-stop app.pulse.client && adb shell am start -W -n app.pulse.client/.MainActivity`.
+   Смотреть `TotalTime`, повторить 10 раз и взять медиану. Сравнить до и после установки профиля:
+   `adb shell cmd package compile -f -m speed-profile app.pulse.client`.
+3. Точнее: добавить модуль `:baselineprofile` (плагин `androidx.baselineprofile`, Macrobenchmark
+   `BaselineProfileRule` + `StartupTimingMetric`) и сгенерировать профиль на реальном устройстве
+   вместо ручного `baseline-prof.txt`.
+4. Рекомпозиции: Layout Inspector → Recomposition counts на ленте и в чате.
+
 ## Проверка без SDK
 
 `python3 scripts/check_project.py` проверяет импорты проектных классов, ссылки на ресурсы,
@@ -109,4 +143,4 @@ Media3 `MediaSessionService` с системным медиа-уведомлен
 | 3 | лента, профиль, друзья | код готов |
 | 4 | видео и клипы | код готов |
 | 5 | музыка | код готов |
-| 6 | уведомления, настройки, полировка | — |
+| 6 | уведомления, настройки, полировка | код готов |

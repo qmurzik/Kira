@@ -121,11 +121,12 @@ fun Attachments(
 @Composable
 fun PhotoGrid(photos: List<Attachment.Photo>, onClick: (String) -> Unit, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(10.dp)
+    val saver = LocalDataSaver.current
     if (photos.size == 1) {
         val p = photos[0]
         val ratio = if (p.width > 0 && p.height > 0) (p.width.toFloat() / p.height).coerceIn(0.6f, 2f) else 1.33f
         AsyncImage(
-            model = p.url,
+            model = if (saver) p.thumb else p.url,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = modifier.aspectRatio(ratio).clip(shape).background(MaterialTheme.colorScheme.surfaceVariant)

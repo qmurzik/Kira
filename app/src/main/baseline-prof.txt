@@ -1,0 +1,27 @@
+# Hand-written baseline profile for the app's own code (AndroidX/Compose libraries ship their own).
+# Installed by androidx.profileinstaller; AOT-compiles the cold start path and main screens.
+# Regenerate with a Macrobenchmark BaselineProfileRule on a real device for best results (see README).
+
+# Startup: Application, DI, secure storage, account restore
+HSPLapp/pulse/client/PulseApp;->**(**)**
+HSPLapp/pulse/client/MainActivity;->**(**)**
+HSPLapp/pulse/client/di/**;->**(**)**
+HSPLapp/pulse/client/core/security/**;->**(**)**
+HSPLapp/pulse/client/data/auth/**;->**(**)**
+HSPLapp/pulse/client/data/settings/**;->**(**)**
+
+# First frame: theme, navigation, feed and dialogs
+HSPLapp/pulse/client/ui/AppRootKt**;->**(**)**
+HSPLapp/pulse/client/ui/theme/**;->**(**)**
+HSPLapp/pulse/client/ui/navigation/**;->**(**)**
+HSPLapp/pulse/client/ui/components/**;->**(**)**
+HSPLapp/pulse/client/ui/feed/**;->**(**)**
+HSPLapp/pulse/client/ui/messages/**;->**(**)**
+
+# Data layer used on the first screens
+HSPLapp/pulse/client/data/api/**;->**(**)**
+HSPLapp/pulse/client/data/mapper/**;->**(**)**
+HSPLapp/pulse/client/data/repo/FeedRepository**;->**(**)**
+HSPLapp/pulse/client/data/repo/MessagesRepository**;->**(**)**
+HSPLapp/pulse/client/data/db/**;->**(**)**
+HSPLapp/pulse/client/domain/model/**;->**(**)**

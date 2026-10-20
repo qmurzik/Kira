@@ -1,9 +1,6 @@
 package app.pulse.client.ui.navigation
 
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -11,12 +8,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import app.pulse.client.ui.auth.AccountsScreen
 import app.pulse.client.ui.auth.LoginScreen
-import app.pulse.client.ui.components.AppTopBar
-import app.pulse.client.ui.components.MessageBox
 import app.pulse.client.ui.messages.ChatScreen
 import app.pulse.client.ui.messages.DialogsScreen
 import app.pulse.client.ui.music.MusicScreen
+import app.pulse.client.ui.notifications.NotificationsScreen
 import app.pulse.client.ui.services.ServicesScreen
+import app.pulse.client.ui.settings.PinSetupScreen
+import app.pulse.client.ui.settings.SettingsScreen
 import app.pulse.client.ui.video.ClipsScreen
 import app.pulse.client.ui.video.VideoPlayerScreen
 import app.pulse.client.ui.video.VideoScreen
@@ -104,15 +102,8 @@ fun AppNavGraph(nav: NavHostController) {
         composable(Routes.BIRTHDAYS) { BirthdaysScreen() }
         composable(Routes.SEARCH) { SearchScreen() }
         composable(Routes.MUSIC) { MusicScreen() }
-        composable(Routes.NOTIFICATIONS) { Pending("Уведомления", 6) }
-        composable(Routes.SETTINGS) { Pending("Настройки", 6) }
-    }
-}
-
-/** Temporary screen for sections scheduled for a later stage. */
-@Composable
-private fun Pending(title: String, stage: Int, showBack: Boolean = true) {
-    Scaffold(topBar = { AppTopBar(title, showBack = showBack) }) { p ->
-        MessageBox("Раздел в разработке", "Будет реализован на этапе $stage", modifier = Modifier.padding(p))
+        composable(Routes.NOTIFICATIONS) { NotificationsScreen() }
+        composable(Routes.SETTINGS) { SettingsScreen() }
+        composable(Routes.PIN_SETUP) { PinSetupScreen() }
     }
 }

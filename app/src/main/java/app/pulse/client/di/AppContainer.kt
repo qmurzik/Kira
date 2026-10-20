@@ -2,6 +2,7 @@ package app.pulse.client.di
 
 import android.app.Application
 import app.pulse.client.BuildConfig
+import app.pulse.client.core.security.AppLock
 import app.pulse.client.core.security.SecureStore
 import app.pulse.client.data.auth.Account
 import app.pulse.client.data.auth.AccountStore
@@ -18,6 +19,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
@@ -52,6 +54,7 @@ class AppContainer(val app: Application) {
     val secureStore = SecureStore(app)
     val accounts = AccountStore(secureStore, json)
     val settings = SettingsRepository(app)
+    val appLock = AppLock(secureStore)
     val vkId = VkIdAuth(http, json, BuildConfig.VK_ID_HOST)
 
     /** Music is not tied to a VK account (local files), so it lives app-wide. */
@@ -78,11 +81,13 @@ class AppContainer(val app: Application) {
             override fun onStart(owner: LifecycleOwner) {
                 isForeground = true
                 _session.value?.onForeground()
+                appScope.launch { appLock.onForeground(settings.current().lockTimeoutSeconds) }
             }
 
             override fun onStop(owner: LifecycleOwner) {
                 isForeground = false
                 _session.value?.onBackground()
+                appLock.onBackground()
             }
         })
     }
