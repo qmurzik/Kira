@@ -27,8 +27,9 @@ def adb(*args, check=False, timeout=120):
 
 def dump_ui(name):
     adb("shell", "uiautomator", "dump", "/sdcard/ui.xml")
-    xml = adb("shell", "cat", "/sdcard/ui.xml")
-    open(os.path.join(OUT, f"{name}.xml"), "w").write(xml)
+    local = os.path.join(OUT, f"{name}.xml")
+    adb("pull", "/sdcard/ui.xml", local)
+    xml = open(local, encoding="utf-8", errors="replace").read() if os.path.exists(local) else ""
     adb("shell", "screencap", "-p", "/sdcard/s.png")
     adb("pull", "/sdcard/s.png", os.path.join(OUT, f"{name}.png"))
     nodes = []
@@ -56,9 +57,15 @@ def crashes():
     return [l for l in lines if "AndroidRuntime" in l or PKG in l] if hit else []
 
 
-print("SDK:", adb("shell", "getprop", "ro.build.version.sdk").strip())
+SDK = int(adb("shell", "getprop", "ro.build.version.sdk").strip() or 0)
+print("SDK:", SDK)
 adb("logcat", "-c")
-print(adb("install", "-r", "-g", APK, check=True, timeout=300).strip())
+# -g (grant runtime permissions) exists only on API 23+.
+install = ["install", "-r", "-g", APK] if SDK >= 23 else ["install", "-r", APK]
+res = adb(*install, timeout=300)
+print(res.strip())
+if "Success" not in res:
+    raise SystemExit("install failed")
 
 # Cold start: force-stop + am start -W, several runs.
 times = []
@@ -111,7 +118,8 @@ adb("shell", "am", "start", "-n", ACTIVITY)
 time.sleep(3)
 dump_ui("05_resumed")
 
-pid = adb("shell", "pidof", PKG).strip()
+ps = adb("shell", "ps")
+pid = next((l.split()[1] for l in ps.splitlines() if l.strip().endswith(PKG)), "")
 print("process alive:", bool(pid), pid)
 if not pid:
     failures.append("process is not running at the end")
