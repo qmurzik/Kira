@@ -48,29 +48,32 @@ jobs:
         id: keystore
         uses: actions/cache/restore@v4
         with:
-          path: ~/.android/debug.keystore
-          key: pulse-signing-keystore-v1
+          path: ~/.pulse-signing/pulse.keystore
+          key: pulse-signing-keystore-v2
 
       - name: Create signing key
         if: steps.keystore.outputs.cache-hit != 'true'
         run: |
-          mkdir -p ~/.android
-          keytool -genkeypair -v -keystore ~/.android/debug.keystore -storepass android -keypass android \
-            -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Pulse, O=Pulse, C=RU"
+          mkdir -p ~/.pulse-signing
+          keytool -genkeypair -v -keystore ~/.pulse-signing/pulse.keystore -storepass pulse-ci -keypass pulse-ci \
+            -alias pulse -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Pulse, O=Pulse, C=RU"
 
       - name: Save signing key
         if: steps.keystore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: ~/.android/debug.keystore
-          key: pulse-signing-keystore-v1
+          path: ~/.pulse-signing/pulse.keystore
+          key: pulse-signing-keystore-v2
 
-      - name: Signing certificate fingerprints
-        run: keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey | grep -E "SHA1|SHA256"
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Use signing key for all build types
+        run: |
+          {
+            echo "PULSE_KEYSTORE_PATH=$HOME/.pulse-signing/pulse.keystore"
+            echo "PULSE_KEYSTORE_PASSWORD=pulse-ci"
+            echo "PULSE_KEY_ALIAS=pulse"
+            echo "PULSE_KEY_PASSWORD=pulse-ci"
+          } >> "$GITHUB_ENV"
+          keytool -list -v -keystore ~/.pulse-signing/pulse.keystore -storepass pulse-ci -alias pulse | grep -E "SHA1|SHA256"
 
       - name: Assemble debug
         run: ./gradlew assembleDebug --stacktrace

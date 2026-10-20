@@ -67,6 +67,8 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            // One stable key (when configured) so the SHA-1 registered in VK ID does not change.
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
         }
         release {
             isMinifyEnabled = true
