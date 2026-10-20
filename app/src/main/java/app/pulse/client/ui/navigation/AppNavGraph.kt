@@ -16,6 +16,9 @@ import app.pulse.client.ui.components.MessageBox
 import app.pulse.client.ui.messages.ChatScreen
 import app.pulse.client.ui.messages.DialogsScreen
 import app.pulse.client.ui.services.ServicesScreen
+import app.pulse.client.ui.video.ClipsScreen
+import app.pulse.client.ui.video.VideoPlayerScreen
+import app.pulse.client.ui.video.VideoScreen
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.pulse.client.ui.LocalSession
@@ -41,8 +44,11 @@ fun AppNavGraph(nav: NavHostController) {
         }
         composable(Routes.SERVICES) { ServicesScreen() }
         composable(Routes.MESSAGES) { DialogsScreen() }
-        composable(Routes.CLIPS) { Pending("Клипы", 4, showBack = false) }
-        composable(Routes.VIDEO) { Pending("Видео", 4, showBack = false) }
+        composable(Routes.CLIPS) { ClipsScreen() }
+        composable(Routes.VIDEO) { VideoScreen() }
+        composable(Routes.VIDEO_PLAYER, arguments = listOf(navArgument("videoId") { type = NavType.StringType })) { e ->
+            VideoPlayerScreen(e.arguments?.getString("videoId").orEmpty())
+        }
 
         composable(
             Routes.CHAT,

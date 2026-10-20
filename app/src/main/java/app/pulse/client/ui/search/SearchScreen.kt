@@ -41,6 +41,7 @@ import app.pulse.client.data.api.userMessage
 import app.pulse.client.di.UserSession
 import app.pulse.client.domain.model.Owner
 import app.pulse.client.domain.model.Post
+import app.pulse.client.domain.model.VideoItem
 import app.pulse.client.ui.LocalSession
 import app.pulse.client.ui.components.AttachmentActions
 import app.pulse.client.ui.components.Avatar
@@ -50,6 +51,7 @@ import app.pulse.client.ui.components.LoadingBox
 import app.pulse.client.ui.components.MessageBox
 import app.pulse.client.ui.feed.PostCard
 import app.pulse.client.ui.navigation.LocalNavigator
+import app.pulse.client.ui.video.VideoRow
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -57,13 +59,14 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
-enum class SearchTab(val label: String) { People("Люди"), Groups("Сообщества"), Posts("Новости") }
+enum class SearchTab(val label: String) { People("Люди"), Groups("Сообщества"), Posts("Новости"), Videos("Видео") }
 
 sealed interface SearchResult {
     data object Idle : SearchResult
     data object Loading : SearchResult
     data class Owners(val items: List<Owner>) : SearchResult
     data class Posts(val items: List<Post>) : SearchResult
+    data class Videos(val items: List<VideoItem>) : SearchResult
     data class Error(val message: String) : SearchResult
 }
 
@@ -92,6 +95,7 @@ class SearchViewModel(private val session: UserSession) : ViewModel() {
                 SearchTab.People -> SearchResult.Owners(session.profiles.searchPeople(q, 0))
                 SearchTab.Groups -> SearchResult.Owners(session.profiles.searchGroups(q, 0))
                 SearchTab.Posts -> SearchResult.Posts(session.feed.searchPosts(q, null).first)
+                SearchTab.Videos -> SearchResult.Videos(session.videos.search(q, 0))
             }
         } catch (e: Exception) {
             SearchResult.Error(e.userMessage())
@@ -172,6 +176,11 @@ fun SearchScreen() {
                                 onLike = { nav.post(p.ownerId, p.id) },
                                 onRepost = { nav.post(p.ownerId, p.id) },
                             )
+                        }
+                    }
+                    is SearchResult.Videos -> if (r.items.isEmpty()) MessageBox("Ничего не найдено") else LazyColumn {
+                        items(r.items, key = { it.apiId }, contentType = { "video" }) { v ->
+                            VideoRow(v, onClick = { nav.video(v.apiId) })
                         }
                     }
                 }
