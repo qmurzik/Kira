@@ -4,12 +4,17 @@ import app.pulse.client.BuildConfig
 import app.pulse.client.data.api.SessionAuth
 import app.pulse.client.data.api.VkApi
 import app.pulse.client.data.api.dto.UserDto
+import app.pulse.client.data.db.AppDatabase
 import app.pulse.client.data.mapper.fullName
+import app.pulse.client.data.repo.LongPollClient
+import app.pulse.client.data.repo.MessagesRepository
+import app.pulse.client.domain.model.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -20,9 +25,6 @@ class UserSession(val userId: Long, private val container: AppContainer) : Sessi
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val refreshLock = Mutex()
 
-    /** Total unread conversations, shown on the bottom bar. */
-    val unreadCount = MutableStateFlow(0)
-
     val api = VkApi(
         http = container.http,
         json = container.json,
@@ -31,7 +33,31 @@ class UserSession(val userId: Long, private val container: AppContainer) : Sessi
         auth = this,
     )
 
-    init {
+    private val dbLazy = lazy { AppDatabase.open(container.app, userId) }
+    val db: AppDatabase by dbLazy
+
+    val messages: MessagesRepository by lazy { MessagesRepository(api, db, container.json, userId) }
+
+    private var longPoll: LongPollClient? = null
+
+    /** Messages chosen for "Переслать" while the user picks the target dialog. */
+    val forwardBuffer = MutableStateFlow<List<Message>>(emptyList())
+
+    /** Total unread conversations, shown on the bottom bar. */
+    val unreadCount: StateFlow<Int> get() = messages.unread
+
+    @Synchronized
+    fun onForeground() {
+        val lp = longPoll ?: LongPollClient(api, container.longPollHttp, container.json, messages).also { longPoll = it }
+        lp.start(scope)
+    }
+
+    @Synchronized
+    fun onBackground() {
+        longPoll?.stop()
+    }
+
+    fun refreshProfileAsync() {
         scope.launch { runCatching { refreshOwnProfile() } }
     }
 
@@ -62,11 +88,18 @@ class UserSession(val userId: Long, private val container: AppContainer) : Sessi
         }
     }
 
-    fun close() {
+    /**
+     * [closeDb] only for sessions not attached to UI (background reply/sync): UI flows may still
+     * be collecting from the database of the active session while navigation is torn down.
+     */
+    fun close(closeDb: Boolean = false) {
+        longPoll?.stop()
         scope.cancel()
+        if (closeDb && dbLazy.isInitialized()) runCatching { db.close() }
     }
 
     /** Called on logout: removes this account's cached data from disk. */
     fun deleteLocalData() {
+        container.app.deleteDatabase(AppDatabase.fileName(userId))
     }
 }

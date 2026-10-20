@@ -147,6 +147,54 @@ for path in kotlin_files():
     if re.search(r"client_secret|clientSecret", text):
         errors.append(f"{rel}: client secret in sources")
 
+# ---------- 6b. bracket balance (string/comment aware) ----------
+def strip_code(text):
+    out, i, n = [], 0, len(text)
+    while i < n:
+        c = text[i]
+        if text.startswith("//", i):
+            j = text.find("\n", i)
+            i = n if j < 0 else j
+        elif text.startswith("/*", i):
+            j = text.find("*/", i + 2)
+            i = n if j < 0 else j + 2
+        elif text.startswith('"""', i):
+            j = text.find('"""', i + 3)
+            i = n if j < 0 else j + 3
+        elif c == '"':
+            i += 1
+            depth = 0
+            while i < n:
+                if text[i] == "\\":
+                    i += 2
+                    continue
+                if text.startswith("${", i):
+                    depth += 1
+                    i += 2
+                    continue
+                if text[i] == "}" and depth:
+                    depth -= 1
+                elif text[i] == '"' and not depth:
+                    break
+                i += 1
+            i += 1
+        elif c == "'":
+            j = i + 1
+            if j < n and text[j] == "\\":
+                j += 1
+            k = text.find("'", j + 1)
+            i = (k + 1) if 0 <= k - i <= 8 else i + 1
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
+
+for path in kotlin_files():
+    code = strip_code(open(path, encoding="utf-8").read())
+    for o, cl in ("{}", "()", "[]"):
+        if code.count(o) != code.count(cl):
+            errors.append(f"{os.path.relpath(path, ROOT)}: unbalanced {o}{cl} ({code.count(o)} vs {code.count(cl)})")
+
 # ---------- 7. unused project imports ----------
 for path in kotlin_files():
     text = open(path, encoding="utf-8").read()

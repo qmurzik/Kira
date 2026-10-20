@@ -5,12 +5,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import app.pulse.client.ui.auth.AccountsScreen
 import app.pulse.client.ui.auth.LoginScreen
 import app.pulse.client.ui.components.AppTopBar
 import app.pulse.client.ui.components.MessageBox
+import app.pulse.client.ui.messages.ChatScreen
+import app.pulse.client.ui.messages.DialogsScreen
 import app.pulse.client.ui.services.ServicesScreen
 
 @Composable
@@ -18,9 +22,20 @@ fun AppNavGraph(nav: NavHostController) {
     NavHost(navController = nav, startDestination = Routes.FEED) {
         composable(Routes.FEED) { Pending("Главная", 3, showBack = false) }
         composable(Routes.SERVICES) { ServicesScreen() }
-        composable(Routes.MESSAGES) { Pending("Мессенджер", 2, showBack = false) }
+        composable(Routes.MESSAGES) { DialogsScreen() }
         composable(Routes.CLIPS) { Pending("Клипы", 4, showBack = false) }
         composable(Routes.VIDEO) { Pending("Видео", 4, showBack = false) }
+
+        composable(
+            Routes.CHAT,
+            arguments = listOf(navArgument("peerId") { type = NavType.LongType }),
+        ) { entry ->
+            ChatScreen(entry.arguments?.getLong("peerId") ?: 0L)
+        }
+        composable(Routes.FORWARD_PICK) {
+            val navigator = LocalNavigator.current
+            DialogsScreen(onPick = { peer -> navigator.replace(Routes.chat(peer)) })
+        }
 
         composable(Routes.ACCOUNTS) { AccountsScreen() }
         composable(Routes.ADD_ACCOUNT) {

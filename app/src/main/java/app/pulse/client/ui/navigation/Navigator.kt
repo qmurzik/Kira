@@ -24,6 +24,12 @@ class Navigator(private val nav: NavController) {
         nav.navigate(route) { launchSingleTop = true }
     }
 
+    /** Pops the current screen and opens [route] in its place. */
+    fun replace(route: String) {
+        nav.popBackStack()
+        nav.navigate(route) { launchSingleTop = true }
+    }
+
     fun chat(peerId: Long) = open(Routes.chat(peerId))
     fun post(ownerId: Long, postId: Long) = open(Routes.post(ownerId, postId))
     fun profile(id: Long) = open(Routes.profile(id))

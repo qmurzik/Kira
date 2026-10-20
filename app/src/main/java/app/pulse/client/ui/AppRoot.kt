@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -60,6 +61,21 @@ private fun MainScaffold(container: AppContainer) {
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val tab = Tab.entries.firstOrNull { it.route == route }
+
+    // Open a chat requested from a notification (switching account if needed).
+    val pending by container.pendingChat.collectAsStateWithLifecycle()
+    val myId = LocalSession.current.userId
+    LaunchedEffect(pending) {
+        val (user, peer) = pending ?: return@LaunchedEffect
+        if (user == myId) {
+            container.pendingChat.value = null
+            navigator.chat(peer)
+        } else if (container.accounts.get(user) != null) {
+            container.switchTo(user)
+        } else {
+            container.pendingChat.value = null
+        }
+    }
 
     CompositionLocalProvider(LocalNavigator provides navigator) {
         Scaffold(

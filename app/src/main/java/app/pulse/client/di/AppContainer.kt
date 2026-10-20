@@ -7,6 +7,9 @@ import app.pulse.client.data.auth.Account
 import app.pulse.client.data.auth.AccountStore
 import app.pulse.client.data.auth.VkIdAuth
 import app.pulse.client.data.settings.SettingsRepository
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -56,7 +59,42 @@ class AppContainer(val app: Application) {
     private val _expired = MutableStateFlow<Long?>(null)
     val expired: StateFlow<Long?> = _expired.asStateFlow()
 
-    private fun openSession(userId: Long) = UserSession(userId, this)
+    /** (userId, peerId) of a chat to open, set when a message notification is tapped. */
+    val pendingChat = MutableStateFlow<Pair<Long, Long>?>(null)
+
+    /** True while any activity of the app is started (ProcessLifecycleOwner). */
+    @Volatile
+    var isForeground: Boolean = false
+        private set
+
+    init {
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                isForeground = true
+                _session.value?.onForeground()
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                isForeground = false
+                _session.value?.onBackground()
+            }
+        })
+    }
+
+    private fun openSession(userId: Long) = UserSession(userId, this).also { s ->
+        s.refreshProfileAsync()
+        if (isForeground) s.onForeground()
+    }
+
+    /**
+     * Session for background work (notification reply, sync). Returns the active session or a
+     * temporary one for another signed-in account; the Boolean says whether the caller must close it.
+     */
+    fun sessionFor(userId: Long): Pair<UserSession, Boolean>? {
+        _session.value?.takeIf { it.userId == userId }?.let { return it to false }
+        if (accounts.get(userId) == null) return null
+        return UserSession(userId, this) to true
+    }
 
     fun onLogin(account: Account) {
         accounts.upsert(account, makeActive = true)
