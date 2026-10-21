@@ -1,0 +1,40 @@
+# Ключи для слоя «Фильтрация JSON».
+# Удаляются ТОЛЬКО элементы массивов (объекты), корневой объект не трогается.
+# Ключи проверяются у самого элемента и у его прямых вложенных объектов.
+# Регистр ключа не важен.
+#
+# Формат строки:
+#   marker:KEY  — элемент удаляется, если ключ KEY присутствует и не пуст
+#                 (также совпадают KEY с префиксом: fooKey, foo_key)
+#   flag:KEY    — элемент удаляется, если KEY == true
+#   keep:KEY    — защитный ключ: элемент с таким ключом НИКОГДА не удаляется
+#                 (подписки, тарифы, оплата)
+#   # ...       — комментарий
+
+# Маркировка рекламы по закону (токен ЕРИР)
+marker:erid
+
+# Флаги рекламы
+flag:isAd
+flag:isAds
+flag:isAdvert
+flag:isAdvertising
+flag:isAdvertisement
+flag:advert
+flag:promoted
+flag:isPromoted
+flag:sponsored
+flag:isSponsored
+flag:adMarker
+flag:isPromo
+
+# Защита платного функционала: такие элементы не удаляем никогда
+keep:subscription
+keep:subscriptionId
+keep:tariff
+keep:tariffId
+keep:paymentMethod
+keep:paymentMethods
+keep:purchaseToken
+keep:billing
+keep:sku

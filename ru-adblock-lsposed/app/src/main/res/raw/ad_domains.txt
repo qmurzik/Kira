@@ -1,0 +1,62 @@
+# Рекламные домены для слоя «Блокировка доменов».
+#
+# Формат:
+#   example.com      — блокируется сам домен и все поддомены (*.example.com)
+#   ~keyword         — блокируется любой хост, в имени которого есть подстрока keyword
+#   # ...            — комментарий
+#
+# Добавляйте только чисто рекламные хосты: блокировка API/CDN, на которых
+# работает само приложение, сломает его.
+
+# --- Яндекс: рекламная сеть, ADFOX, Yandex Mobile Ads ---
+an.yandex.ru
+yabs.yandex.ru
+adfox.ru
+adfox.yandex.ru
+ads.adfox.ru
+banners.adfox.ru
+mobile.yandexadexchange.net
+yandexadexchange.net
+adsdk.yandex.ru
+ads.yandex.ru
+# Аналитику AppMetrica (report/startup) НЕ блокируем — от неё зависят конфиги
+# приложений. Рекламные трекинг-ссылки AppMetrica:
+redirect.appmetrica.yandex.com
+redirect.appmetrica.yandex.ru
+
+# --- VK Реклама / myTarget / Mail.ru ---
+ad.mail.ru
+target.my.com
+ads.vk.com
+r.mradx.net
+~mytarget
+
+# --- Google Ads / AdMob ---
+doubleclick.net
+googlesyndication.com
+googleadservices.com
+googleads.g.doubleclick.net
+admob.com
+~doubleclick
+~googlesyndication
+
+# --- Российские рекламные биржи и сети ---
+adriver.ru
+betweendigital.com
+otm-r.com
+buzzoola.com
+bidswitch.net
+adhigh.net
+hybrid.ai
+
+# --- Международные мобильные рекламные сети ---
+applovin.com
+applvn.com
+unityads.unity3d.com
+ads.mopub.com
+criteo.com
+criteo.net
+adcolony.com
+vungle.com
+inmobi.com
+pangle.io

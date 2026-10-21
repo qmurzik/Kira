@@ -1,0 +1,110 @@
+name: ru-adblock-lsposed - Build
+
+on:
+  push:
+    branches: ["**"]
+    # Для тегов фильтр paths не применяется: любой тег v* собирает релиз.
+    tags: ["v*"]
+    paths:
+      - "ru-adblock-lsposed/**"
+      - ".github/workflows/ru-adblock-lsposed.yml"
+  pull_request:
+    paths:
+      - "ru-adblock-lsposed/**"
+      - ".github/workflows/ru-adblock-lsposed.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: ru-adblock-lsposed-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: ru-adblock-lsposed
+
+jobs:
+  build:
+    name: Build debug & release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Version
+        run: |
+          echo "VERSION_CODE=${{ github.run_number }}" >> "$GITHUB_ENV"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "VERSION_NAME=1.0.0-ci${{ github.run_number }}" >> "$GITHUB_ENV"
+          fi
+
+      # Секреты (Settings → Secrets and variables → Actions):
+      #   KEYSTORE_BASE64 — base64 от .jks, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD.
+      # Если KEYSTORE_BASE64 не задан, release подписывается debug-ключом из app/debug.keystore.
+      - name: Prepare release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "Release будет подписан ключом из секретов"
+          else
+            echo "::notice::Секрет KEYSTORE_BASE64 не задан — release подписывается debug-ключом"
+          fi
+
+      - name: Unit tests
+        run: chmod +x ./gradlew && ./gradlew testDebugUnitTest --stacktrace
+
+      - name: Assemble debug & release
+        env:
+          SIGNING_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleDebug assembleRelease --stacktrace
+
+      - name: Verify release signature
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs app/build/outputs/apk/release/*.apk
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ru-adblock-lsposed-debug
+          path: ru-adblock-lsposed/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ru-adblock-lsposed-release
+          path: ru-adblock-lsposed/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: RU AdBlock ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            ru-adblock-lsposed/app/build/outputs/apk/release/*.apk
+            ru-adblock-lsposed/app/build/outputs/apk/debug/*.apk

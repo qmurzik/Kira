@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Рекомендуемая область действия (LSPosed подставит её при включении модуля). -->
+    <string-array name="xposed_scope">
+        <!-- Маркетплейсы и объявления -->
+        <item>com.avito.android</item>
+        <item>ru.ozon.app.android</item>
+        <item>com.wildberries.ru</item>
+        <item>ru.beru.android</item>          <!-- Яндекс Маркет -->
+        <item>com.allgoritm.youla</item>      <!-- Юла -->
+        <item>ru.auto.ara</item>              <!-- Авто.ру -->
+        <item>ru.cian.main</item>             <!-- ЦИАН -->
+        <item>com.lamoda.lite</item>
+        <!-- Магазины приложений -->
+        <item>ru.vk.store</item>              <!-- RuStore -->
+        <!-- Яндекс -->
+        <item>ru.yandex.taxi</item>           <!-- Яндекс Go -->
+        <item>ru.yandex.yandexmaps</item>     <!-- Яндекс Карты -->
+        <item>ru.yandex.yandexnavi</item>     <!-- Яндекс Навигатор -->
+        <item>com.yandex.browser</item>
+        <item>com.yandex.browser.lite</item>
+        <item>ru.yandex.searchplugin</item>   <!-- Яндекс с Алисой -->
+        <item>ru.yandex.music</item>
+        <item>ru.kinopoisk</item>
+        <item>ru.yandex.weatherplugin</item>  <!-- Яндекс Погода -->
+        <item>ru.yandex.mail</item>
+        <item>ru.yandex.disk</item>
+        <item>ru.yandex.translate</item>
+        <item>ru.foodfox.client</item>        <!-- Яндекс Еда -->
+        <item>com.yandex.lavka</item>
+        <item>ru.zen.android</item>           <!-- Дзен -->
+        <!-- VK / Mail.ru -->
+        <item>com.vkontakte.android</item>
+        <item>ru.ok.android</item>
+        <item>com.vk.vkvideo</item>
+        <item>ru.mail.mailapp</item>
+        <!-- Прочее -->
+        <item>ru.dublgis.dgismobile</item>    <!-- 2ГИС -->
+        <item>ru.rutube.app</item>
+    </string-array>
+</resources>

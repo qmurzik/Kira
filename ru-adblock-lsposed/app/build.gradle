@@ -1,0 +1,87 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Подпись release: ключ берётся из переменных окружения (в CI — из секретов репозитория).
+// Если ключа нет, release подписывается debug-ключом из app/debug.keystore.
+def releaseKeystore = System.getenv('SIGNING_KEYSTORE_PATH')
+def hasReleaseKey = releaseKeystore != null && !releaseKeystore.isEmpty() && file(releaseKeystore).exists()
+
+def ciVersionCode = System.getenv('VERSION_CODE')
+def ciVersionName = System.getenv('VERSION_NAME')
+
+android {
+    namespace 'ru.adblock.lsposed'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+
+    defaultConfig {
+        applicationId 'ru.adblock.lsposed'
+        minSdk 26
+        targetSdk 35
+        versionCode ciVersionCode ? ciVersionCode.toInteger() : 1
+        versionName ciVersionName ?: '1.0.0'
+    }
+
+    signingConfigs {
+        debug {
+            // Фиксированный debug-ключ, чтобы сборки из CI ставились поверх друг друга.
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+        if (hasReleaseKey) {
+            release {
+                storeFile file(releaseKeystore)
+                storePassword System.getenv('SIGNING_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('SIGNING_KEY_ALIAS')
+                keyPassword System.getenv('SIGNING_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            // Без R8: точка входа указана в assets/xposed_init, а APK и так крошечный.
+            minifyEnabled false
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach {
+            outputFileName = "ru-adblock-lsposed-${variant.versionName}-${variant.buildType.name}.apk"
+        }
+    }
+}
+
+dependencies {
+    compileOnly 'de.robv.android.xposed:api:82'
+    compileOnly 'de.robv.android.xposed:api:82:sources'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+    testImplementation 'de.robv.android.xposed:api:82'
+}
