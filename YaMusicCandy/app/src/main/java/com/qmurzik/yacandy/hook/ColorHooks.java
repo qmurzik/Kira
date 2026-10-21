@@ -8,6 +8,9 @@ import android.graphics.Paint;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RadialGradient;
 import android.graphics.SweepGradient;
+import android.content.res.ColorStateList;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.Window;
 
@@ -62,6 +65,61 @@ final class ColorHooks {
         }
 
         hookWindowBars(m);
+        hookViewColors(m);
+    }
+
+    /**
+     * Classic Views resolve colors through ColorStateList and color drawables before they reach
+     * Paint, and framework code may have Paint.setColor inlined. Mapping at these points catches
+     * text, tints and backgrounds of the View-based screens (dialogs, settings, menus).
+     */
+    private static void hookViewColors(CandyModule m) {
+        try {
+            m.hookSafely(ColorStateList.class.getDeclaredMethod("getColorForState", int[].class, int.class),
+                    chain -> mapResult(m, chain.proceed()));
+            m.hookSafely(ColorStateList.class.getDeclaredMethod("getDefaultColor"),
+                    chain -> mapResult(m, chain.proceed()));
+        } catch (Throwable t) {
+            m.logE("ColorStateList hooks", t);
+        }
+        try {
+            m.hookSafely(ColorDrawable.class.getDeclaredMethod("setColor", int.class), chain -> mapArg0(m, chain));
+            m.hookSafely(ColorDrawable.class.getDeclaredConstructor(int.class), chain -> mapArg0(m, chain));
+            m.hookSafely(GradientDrawable.class.getDeclaredMethod("setColor", int.class), chain -> mapArg0(m, chain));
+            m.hookSafely(GradientDrawable.class.getDeclaredMethod("setColors", int[].class), chain -> {
+                ColorEngine e = m.colors();
+                int[] src = (int[]) chain.getArg(0);
+                if (e == null || src == null) return chain.proceed();
+                int[] dst = new int[src.length];
+                for (int k = 0; k < src.length; k++) dst[k] = e.map(src[k]);
+                return chain.proceed(new Object[]{dst});
+            });
+            for (java.lang.reflect.Method method : GradientDrawable.class.getDeclaredMethods()) {
+                Class<?>[] p = method.getParameterTypes();
+                if (method.getName().equals("setStroke") && p.length >= 2 && p[1] == int.class) {
+                    m.hookSafely(method, chain -> {
+                        ColorEngine e = m.colors();
+                        if (e == null) return chain.proceed();
+                        Object[] args = chain.getArgs().toArray();
+                        args[1] = e.map((Integer) args[1]);
+                        return chain.proceed(args);
+                    });
+                }
+            }
+        } catch (Throwable t) {
+            m.logE("drawable color hooks", t);
+        }
+    }
+
+    private static Object mapResult(CandyModule m, Object result) {
+        ColorEngine e = m.colors();
+        return e != null && result instanceof Integer ? (Object) e.map((Integer) result) : result;
+    }
+
+    private static Object mapArg0(CandyModule m, io.github.libxposed.api.XposedInterface.Chain chain) throws Throwable {
+        ColorEngine e = m.colors();
+        if (e == null) return chain.proceed();
+        return chain.proceed(new Object[]{e.map((Integer) chain.getArg(0))});
     }
 
     private static void hookCanvas(CandyModule m, Class<?> cls) {

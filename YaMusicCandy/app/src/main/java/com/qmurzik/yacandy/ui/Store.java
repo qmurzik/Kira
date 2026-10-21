@@ -180,10 +180,10 @@ public final class Store implements XposedServiceHelper.OnServiceListener {
     }
 
     /** Copies a font into the module's shared files so the hooked app can open it. */
-    void writeFont(InputStream in) throws IOException {
+    void writeFont(boolean bold, InputStream in) throws IOException {
         XposedService s = service;
         if (s == null) throw new IOException("LSPosed не подключён");
-        try (ParcelFileDescriptor pfd = s.openRemoteFile(Keys.FONT_FILE);
+        try (ParcelFileDescriptor pfd = s.openRemoteFile(bold ? Keys.FONT_BOLD_FILE : Keys.FONT_FILE);
              FileOutputStream out = new FileOutputStream(pfd.getFileDescriptor())) {
             byte[] buf = new byte[64 * 1024];
             long total = 0;
@@ -199,6 +199,7 @@ public final class Store implements XposedServiceHelper.OnServiceListener {
         } catch (Exception e) {
             throw new IOException(e);
         }
-        putInt(Keys.FONT_VERSION, getInt(Keys.FONT_VERSION, 0) + 1);
+        String version = bold ? Keys.FONT_BOLD_VERSION : Keys.FONT_VERSION;
+        putInt(version, getInt(version, 0) + 1);
     }
 }

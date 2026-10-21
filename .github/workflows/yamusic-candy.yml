@@ -72,13 +72,13 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew assembleRelease --stacktrace
-          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/YaMusicCandy.apk
+          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/Yume.apk
 
       # LSPosed finds the module only through these files; the libxposed API must be provided
       # by the framework at runtime, so it must not be packaged.
       - name: Verify APK layout
         run: |
-          APK=app/build/outputs/apk/release/YaMusicCandy.apk
+          APK=app/build/outputs/apk/release/Yume.apk
           unzip -l "$APK" | grep -E "META-INF/xposed/|classes.*\.dex"
           for f in java_init.list module.prop scope.list; do
             echo "== $f"; unzip -p "$APK" "META-INF/xposed/$f" || { echo "missing $f"; exit 1; }
@@ -96,7 +96,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: YaMusicCandy-apk
-          path: YaMusicCandy/app/build/outputs/apk/release/YaMusicCandy.apk
+          name: Yume-apk
+          path: YaMusicCandy/app/build/outputs/apk/release/Yume.apk
           if-no-files-found: error
           retention-days: 30

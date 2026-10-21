@@ -35,6 +35,7 @@ import io.github.libxposed.service.XposedService;
 
 public class MainActivity extends Activity implements Store.Listener {
     private static final int REQ_FONT = 1;
+    private static final int REQ_FONT_BOLD = 2;
 
     private Store store;
     private TextView status;
@@ -64,7 +65,7 @@ public class MainActivity extends Activity implements Store.Listener {
     private LinearLayout column;
 
     private void build() {
-        getWindow().getDecorView().setBackgroundColor(Ui.night(this) ? 0xFF140E19 : 0xFFF8F0F6);
+        getWindow().getDecorView().setBackgroundColor(Ui.night(this) ? 0xFF0B0A1A : 0xFFF5F2FF);
         ScrollView scroll = new ScrollView(this);
         scroll.setFitsSystemWindows(true);
         column = new LinearLayout(this);
@@ -74,9 +75,9 @@ public class MainActivity extends Activity implements Store.Listener {
         scroll.addView(column);
         setContentView(scroll);
 
-        TextView title = Ui.text(this, "Конфетка 🍬", 30, true, Ui.textColor(this));
+        TextView title = Ui.text(this, "Yume", 32, true, Ui.textColor(this));
         column.addView(title);
-        TextView sub = Ui.text(this, "Чистый интерфейс, плеер, поведение и внешний вид Яндекс Музыки",
+        TextView sub = Ui.text(this, "Внешний вид, плеер и чистый интерфейс Яндекс Музыки",
                 15, false, Ui.subColor(this));
         column.addView(sub);
 
@@ -88,14 +89,14 @@ public class MainActivity extends Activity implements Store.Listener {
         column.addView(status, slp);
         updateStatus();
 
-        cleanSection();
-        playerSection();
-        behaviourSection();
-        experimentsSection();
         presets();
         colorsSection();
         fontSection();
         shapeSection();
+        cleanSection();
+        playerSection();
+        behaviourSection();
+        experimentsSection();
         viewsSection();
         applySection();
     }
@@ -273,7 +274,7 @@ public class MainActivity extends Activity implements Store.Listener {
             dot.setSize(ds, ds);
             chip.setCompoundDrawablesRelativeWithIntrinsicBounds(dot, null, null, null);
             chip.setCompoundDrawablePadding(Ui.dp(this, 8));
-            chip.setBackground(Ui.rounded(Ui.night(this) ? 0xFF33263D : 0xFFF6E6F0, Ui.dp(this, 22)));
+            chip.setBackground(Ui.rounded(Ui.night(this) ? 0xFF262042 : 0xFFECE7FB, Ui.dp(this, 22)));
             chip.setOnClickListener(v -> {
                 store.putAll(Presets.values(index));
                 Toast.makeText(this, "Тема «" + Presets.NAMES[index] + "» применена", Toast.LENGTH_SHORT).show();
@@ -290,12 +291,43 @@ public class MainActivity extends Activity implements Store.Listener {
     }
 
     private void colorsSection() {
-        LinearLayout c = card("Цвета", "Перекраска работает на уровне отрисовки, поэтому затрагивает и обычные экраны, и Compose.");
+        LinearLayout c = card("Цвета",
+                "Палитра собрана по реальным цветам дизайна Яндекс Музыки: фон, карточки, текст, акцент и лайк "
+                        + "заменяются точно по ролям, а прозрачность сохраняется, поэтому вторичный текст и "
+                        + "подложки остаются на своих местах. Работает и для Compose, и для обычных экранов.");
         switchRow(c, "Включить перекраску", null, Keys.COLORS_ON, false);
 
-        switchRow(c, "Свой акцентный цвет", "Заменяет фирменный жёлтый (или любой оттенок из диапазона ниже).",
+        c.addView(Ui.caption(this, "Акцент"));
+        switchRow(c, "Свой акцент", "Вместо фирменного жёлтого: кнопки, прогресс, активные иконки, ссылки.",
                 Keys.ACCENT_ON, true);
-        colorRow(c, "Акцент", Keys.ACCENT_COLOR, Keys.DEF_ACCENT);
+        colorRow(c, "Цвет акцента", Keys.ACCENT_COLOR, Keys.DEF_ACCENT);
+        String[] onIds = {"auto", "black", "white"};
+        String[] onNames = {"Автоматически", "Чёрный", "Белый"};
+        choiceRow(c, "Текст на кнопках акцента", Keys.ON_ACCENT, onIds, onNames, "auto", id -> {
+        });
+        switchRow(c, "Ссылки цветом акцента", "Синие ссылки в светлой теме.", Keys.ACCENT_LINKS, true);
+        switchRow(c, "Свой цвет лайка", "Сердечко и «Мне нравится».", Keys.LIKE_ON, false);
+        colorRow(c, "Цвет лайка", Keys.LIKE_COLOR, Keys.DEF_LIKE);
+
+        c.addView(Ui.caption(this, "Тёмная тема"));
+        switchRow(c, "Свой фон", "Чёрный фон экранов и серые карточки.", Keys.DARK_BG_ON, false);
+        colorRow(c, "Фон", Keys.DARK_BG_COLOR, Keys.DEF_DARK_BG);
+        colorRow(c, "Карточки и панели", Keys.DARK_SURFACE_COLOR, Keys.DEF_DARK_SURFACE);
+
+        c.addView(Ui.caption(this, "Светлая тема"));
+        switchRow(c, "Свой фон", "Белый фон экранов и светло-серые карточки.", Keys.LIGHT_BG_ON, false);
+        colorRow(c, "Фон", Keys.LIGHT_BG_COLOR, Keys.DEF_LIGHT_BG);
+        colorRow(c, "Карточки и панели", Keys.LIGHT_SURFACE_COLOR, Keys.DEF_LIGHT_SURFACE);
+
+        c.addView(Ui.caption(this, "Текст и иконки"));
+        switchRow(c, "Свой цвет текста", "Основной, вторичный и неактивный текст получают один оттенок с "
+                + "исходной прозрачностью.", Keys.TEXT_ON, false);
+        colorRow(c, "В тёмной теме", Keys.TEXT_DARK_COLOR, Keys.DEF_TEXT_DARK);
+        colorRow(c, "В светлой теме", Keys.TEXT_LIGHT_COLOR, Keys.DEF_TEXT_LIGHT);
+
+        c.addView(Ui.caption(this, "Тонкая настройка"));
+        sliderRow(c, "Сдвиг оттенка прочих цветов", Keys.HUE_SHIFT, 0, 0, 359, "%d°");
+        sliderRow(c, "Насыщенность прочих цветов", Keys.SATURATION, 100, 0, 200, "%d%%");
         TextView rangeLabel = Ui.caption(c.getContext(), "");
         c.addView(rangeLabel);
         SeekBar from = Ui.seek(this, 360, store.getInt(Keys.ACCENT_HUE_FROM, Keys.DEF_HUE_FROM));
@@ -303,40 +335,126 @@ public class MainActivity extends Activity implements Store.Listener {
         from.setProgressDrawable(Ui.hueStrip(this));
         to.setProgressDrawable(Ui.hueStrip(this));
         Runnable label = () -> rangeLabel.setText(String.format(Locale.ROOT,
-                "Какие оттенки заменять: %d° – %d° (жёлтый ≈ 45°)", from.getProgress(), to.getProgress()));
+                "Оттенки, которые считаются акцентом: %d° – %d° (жёлтый ≈ 50°)", from.getProgress(), to.getProgress()));
         label.run();
         bindSeek(from, Keys.ACCENT_HUE_FROM, label);
         bindSeek(to, Keys.ACCENT_HUE_TO, label);
         c.addView(from);
         c.addView(to);
-
-        sliderRow(c, "Сдвиг оттенка остальных цветов", Keys.HUE_SHIFT, 0, 0, 359, "%d°");
-        sliderRow(c, "Насыщенность", Keys.SATURATION, 100, 0, 200, "%d%%");
-
-        switchRow(c, "Фон тёмной темы", "Чёрные и тёмно-серые поверхности.", Keys.DARK_BG_ON, false);
-        colorRow(c, "Цвет тёмного фона", Keys.DARK_BG_COLOR, Keys.DEF_DARK_BG);
-        switchRow(c, "Фон светлой темы", "Белые и светло-серые поверхности.", Keys.LIGHT_BG_ON, false);
-        colorRow(c, "Цвет светлого фона", Keys.LIGHT_BG_COLOR, Keys.DEF_LIGHT_BG);
-        switchRow(c, "Цвет текста и иконок", "Почти белые (в тёмной теме) / почти чёрные (в светлой).", Keys.TEXT_ON, false);
-        colorRow(c, "Текст в тёмной теме", Keys.TEXT_DARK_COLOR, Keys.DEF_TEXT_DARK);
-        colorRow(c, "Текст в светлой теме", Keys.TEXT_LIGHT_COLOR, Keys.DEF_TEXT_LIGHT);
-
         textArea(c, "Точная замена цветов",
                 "По строке на правило: #FFDB4D = #FF6FB5\n#AARRGGBB тоже можно. Применяется раньше остальных правил.",
                 Keys.COLOR_MAP);
     }
 
+    private static final String[] SYSTEM_FONT_NAMES = {"Как в приложении", "Узкий (Condensed)",
+            "С засечками (Serif)", "Моноширинный", "Casual", "Рукописный (Cursive)", "Капитель"};
+
     private void fontSection() {
-        LinearLayout c = card("Шрифт", "Подменяет шрифт всего приложения с сохранением жирности.");
-        String[] names = {"Как в приложении", "Узкий (Condensed)", "С засечками (Serif)", "Моноширинный",
-                "Casual", "Рукописный (Cursive)", "Капитель", "Свой файл…"};
-        choiceRow(c, "Шрифт", Keys.FONT_SOURCE, Keys.FONT_IDS, names, Keys.FONT_OFF, id -> {
-            if (Keys.FONT_CUSTOM.equals(id)) pickFont();
-        });
-        Button pick = button(c, "Выбрать файл шрифта (.ttf / .otf)");
-        pick.setOnClickListener(v -> pickFont());
+        LinearLayout c = card("Шрифт",
+                "18 встроенных шрифтов с кириллицей (лицензия SIL OFL) или свой файл. У вариативных "
+                        + "шрифтов настоящая толщина, а не искусственное утолщение.");
+        fontRow(c, "Основной текст", false);
+        fontRow(c, "Заголовки и жирный текст", true);
         sliderRow(c, "Толщина", Keys.FONT_WEIGHT_DELTA, 0, -300, 300, "%+d");
         sliderRow(c, "Размер текста", Keys.FONT_SCALE, 100, 70, 160, "%d%%");
+    }
+
+    /** One font slot: system families, bundled fonts and "own file", previewed in their typeface. */
+    private void fontRow(LinearLayout parent, String title, boolean bold) {
+        String key = bold ? Keys.FONT_BOLD_SOURCE : Keys.FONT_SOURCE;
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        java.util.List<String> names = new java.util.ArrayList<>();
+        if (bold) {
+            ids.add(Keys.FONT_SAME);
+            names.add("Как основной");
+        }
+        for (int i = 0; i < Keys.FONT_IDS.length - 1; i++) {
+            ids.add(Keys.FONT_IDS[i]);
+            names.add(SYSTEM_FONT_NAMES[i]);
+        }
+        for (int i = 0; i < Keys.BUNDLED_FONT_IDS.length; i++) {
+            ids.add(Keys.FONT_BUNDLED + Keys.BUNDLED_FONT_IDS[i]);
+            names.add(Keys.BUNDLED_FONT_NAMES[i]);
+        }
+        ids.add(Keys.FONT_CUSTOM);
+        names.add("Свой файл…");
+        String def = bold ? Keys.FONT_SAME : Keys.FONT_OFF;
+
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, Ui.dp(this, 10), 0, Ui.dp(this, 10));
+        row.addView(Ui.text(this, title, 16, false, Ui.textColor(this)), new LinearLayout.LayoutParams(0, -2, 1f));
+        TextView value = Ui.text(this, "", 15, true, Ui.BRAND);
+        Runnable show = () -> {
+            String cur = store.getString(key, def);
+            int i = ids.indexOf(cur);
+            value.setText(i >= 0 ? names.get(i) : names.get(0));
+            value.setTypeface(preview(cur));
+        };
+        show.run();
+        row.addView(value);
+        row.setOnClickListener(v -> {
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<String>(this,
+                    android.R.layout.simple_list_item_single_choice, names) {
+                @Override
+                public View getView(int position, View convertView, ViewGroup p) {
+                    TextView t = (TextView) super.getView(position, convertView, p);
+                    t.setTypeface(preview(ids.get(position)));
+                    t.setTextSize(17);
+                    return t;
+                }
+            };
+            new AlertDialog.Builder(this)
+                    .setTitle(title)
+                    .setSingleChoiceItems(adapter, Math.max(0, ids.indexOf(store.getString(key, def))), (d, which) -> {
+                        d.dismiss();
+                        String id = ids.get(which);
+                        if (Keys.FONT_CUSTOM.equals(id)) {
+                            pickFont(bold);
+                        } else if (id.startsWith(Keys.FONT_BUNDLED)) {
+                            installBundledFont(bold, id, show);
+                        } else {
+                            store.putString(key, id);
+                            show.run();
+                        }
+                    })
+                    .show();
+        });
+        parent.addView(row);
+    }
+
+    private Typeface preview(String id) {
+        try {
+            if (id.startsWith(Keys.FONT_BUNDLED)) {
+                return Typeface.createFromAsset(getAssets(),
+                        "fonts/" + id.substring(Keys.FONT_BUNDLED.length()) + ".ttf");
+            }
+            for (int i = 0; i < Keys.FONT_IDS.length; i++) {
+                if (Keys.FONT_IDS[i].equals(id) && Keys.FONT_FAMILIES[i] != null) {
+                    return Typeface.create(Keys.FONT_FAMILIES[i], Typeface.NORMAL);
+                }
+            }
+        } catch (Throwable ignored) {
+            // fall through to the default
+        }
+        return Typeface.DEFAULT;
+    }
+
+    private void installBundledFont(boolean bold, String id, Runnable done) {
+        new Thread(() -> {
+            String msg = null;
+            try (InputStream in = getAssets().open("fonts/" + id.substring(Keys.FONT_BUNDLED.length()) + ".ttf")) {
+                store.writeFont(bold, in);
+                store.putString(bold ? Keys.FONT_BOLD_SOURCE : Keys.FONT_SOURCE, id);
+            } catch (Throwable t) {
+                msg = "Не удалось установить шрифт: " + t.getMessage();
+            }
+            String m = msg;
+            runOnUiThread(() -> {
+                if (m != null) Toast.makeText(this, m, Toast.LENGTH_LONG).show();
+                done.run();
+            });
+        }).start();
     }
 
     private void shapeSection() {
@@ -524,7 +642,7 @@ public class MainActivity extends Activity implements Store.Listener {
 
     // ---------------------------------------------------------------- actions
 
-    private void pickFont() {
+    private void pickFont(boolean bold) {
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType("*/*");
@@ -532,7 +650,7 @@ public class MainActivity extends Activity implements Store.Listener {
                 "font/ttf", "font/otf", "font/sfnt", "application/x-font-ttf",
                 "application/x-font-otf", "application/font-sfnt", "application/octet-stream"});
         try {
-            startActivityForResult(i, REQ_FONT);
+            startActivityForResult(i, bold ? REQ_FONT_BOLD : REQ_FONT);
         } catch (Exception e) {
             Toast.makeText(this, "Нет приложения для выбора файлов", Toast.LENGTH_LONG).show();
         }
@@ -541,7 +659,9 @@ public class MainActivity extends Activity implements Store.Listener {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != REQ_FONT || resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        if ((requestCode != REQ_FONT && requestCode != REQ_FONT_BOLD) || resultCode != RESULT_OK
+                || data == null || data.getData() == null) return;
+        boolean bold = requestCode == REQ_FONT_BOLD;
         Uri uri = data.getData();
         new Thread(() -> {
             String msg;
@@ -556,11 +676,11 @@ public class MainActivity extends Activity implements Store.Listener {
                 }
                 Typeface.createFromFile(tmp);
                 try (InputStream in = new java.io.FileInputStream(tmp)) {
-                    store.writeFont(in);
+                    store.writeFont(bold, in);
                 }
                 //noinspection ResultOfMethodCallIgnored
                 tmp.delete();
-                store.putString(Keys.FONT_SOURCE, Keys.FONT_CUSTOM);
+                store.putString(bold ? Keys.FONT_BOLD_SOURCE : Keys.FONT_SOURCE, Keys.FONT_CUSTOM);
                 msg = "Шрифт установлен";
             } catch (Throwable t) {
                 msg = "Не удалось установить шрифт: " + t.getMessage();

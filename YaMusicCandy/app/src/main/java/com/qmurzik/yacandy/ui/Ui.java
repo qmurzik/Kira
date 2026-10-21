@@ -26,18 +26,18 @@ final class Ui {
     }
 
     static int cardColor(Context c) {
-        return night(c) ? 0xFF231A2B : 0xFFFFFFFF;
+        return night(c) ? 0xFF17142B : 0xFFFFFFFF;
     }
 
     static int textColor(Context c) {
-        return night(c) ? 0xFFF5EAF7 : 0xFF241628;
+        return night(c) ? 0xFFEDE7FF : 0xFF1B1530;
     }
 
     static int subColor(Context c) {
-        return night(c) ? 0xB3F5EAF7 : 0x99241628;
+        return night(c) ? 0xB3EDE7FF : 0x991B1530;
     }
 
-    static final int BRAND = 0xFFFF6FB5;
+    static final int BRAND = 0xFF8B6CFF;
 
     static Drawable rounded(int color, float radiusPx) {
         GradientDrawable d = new GradientDrawable();

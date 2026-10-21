@@ -9,9 +9,9 @@
         android:name=".ui.CandyApp"
         android:allowBackup="false"
         android:description="@string/xposed_description"
-        android:icon="@drawable/ic_candy"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/ic_candy"
+        android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/Theme.Candy">
 
         <activity

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Candy" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:colorAccent">#FF6FB5</item>
-        <item name="android:colorPrimary">#FF6FB5</item>
-        <item name="android:colorPrimaryDark">#F8F0F6</item>
-        <item name="android:statusBarColor">#F8F0F6</item>
-        <item name="android:navigationBarColor">#F8F0F6</item>
+        <item name="android:colorAccent">#8B6CFF</item>
+        <item name="android:colorPrimary">#8B6CFF</item>
+        <item name="android:colorPrimaryDark">#F5F2FF</item>
+        <item name="android:statusBarColor">#F5F2FF</item>
+        <item name="android:navigationBarColor">#F5F2FF</item>
         <item name="android:windowBackground">@color/candy_bg</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>

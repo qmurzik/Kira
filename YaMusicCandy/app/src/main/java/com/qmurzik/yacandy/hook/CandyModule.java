@@ -71,6 +71,10 @@ public class CandyModule extends XposedModule {
         return cfg;
     }
 
+    String appDataDir() {
+        return appInfo.dataDir;
+    }
+
     /** Current color engine, or null when color features are off. */
     ColorEngine colors() {
         Config c = cfg;
@@ -177,8 +181,9 @@ public class CandyModule extends XposedModule {
             Config c = new Config(prefs);
             cfg = c;
             colors = new ColorEngine(c, colors != null ? colors.isNight() : systemNight());
-            if (old == null || old.fontVersion != c.fontVersion
-                    || !old.fontSource.equals(c.fontSource) || old.fontWeightDelta != c.fontWeightDelta) {
+            if (old == null || old.fontVersion != c.fontVersion || old.fontBoldVersion != c.fontBoldVersion
+                    || !old.fontSource.equals(c.fontSource) || !old.fontBoldSource.equals(c.fontBoldSource)
+                    || old.fontWeightDelta != c.fontWeightDelta) {
                 Fonts.reset();
             }
             installHooks(false);

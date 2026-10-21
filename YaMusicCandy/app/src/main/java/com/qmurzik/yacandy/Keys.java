@@ -28,11 +28,22 @@ public final class Keys {
     public static final String TEXT_DARK_COLOR = "text_dark_color";
     public static final String TEXT_LIGHT_COLOR = "text_light_color";
     public static final String COLOR_MAP = "color_map";
+    public static final String DARK_SURFACE_COLOR = "dark_surface_color";
+    public static final String LIGHT_SURFACE_COLOR = "light_surface_color";
+    public static final String LIKE_ON = "like_on";
+    public static final String LIKE_COLOR = "like_color";
+    /** Text on accent buttons: "auto" (by contrast), "black" or "white". */
+    public static final String ON_ACCENT = "on_accent";
+    public static final String ACCENT_LINKS = "accent_links";
 
     // Font
     public static final String FONT_SOURCE = "font_source";
     public static final String FONT_WEIGHT_DELTA = "font_weight_delta";
     public static final String FONT_VERSION = "font_version";
+    /** Second slot: bold text and headings (weight 600+). Same values as {@link #FONT_SOURCE}. */
+    public static final String FONT_BOLD_SOURCE = "font_bold_source";
+    public static final String FONT_BOLD_VERSION = "font_bold_version";
+    public static final String FONT_BOLD_FILE = "custom_font_bold";
 
     // Geometry
     public static final String UI_SCALE = "ui_scale";
@@ -92,6 +103,18 @@ public final class Keys {
 
     public static final String FONT_OFF = "off";
     public static final String FONT_CUSTOM = "custom";
+    /** Prefix of fonts shipped in the module's assets/fonts; the file is copied to the remote slot. */
+    public static final String FONT_BUNDLED = "bundled:";
+    /** "Same as text" for the bold slot. */
+    public static final String FONT_SAME = "same";
+    public static final String[] BUNDLED_FONT_IDS = {
+            "montserrat", "inter", "manrope", "onest", "golos", "rubik", "nunito", "comfortaa",
+            "raleway", "jost", "exo2", "unbounded", "jetbrainsmono", "russoone", "caveat", "lobster",
+            "pacifico", "pressstart2p"};
+    public static final String[] BUNDLED_FONT_NAMES = {
+            "Montserrat", "Inter", "Manrope", "Onest", "Golos Text", "Rubik", "Nunito", "Comfortaa",
+            "Raleway", "Jost", "Exo 2", "Unbounded", "JetBrains Mono", "Russo One", "Caveat (рукописный)",
+            "Lobster", "Pacifico", "Press Start 2P (пиксельный)"};
     /** Font source ids and the system family each one maps to (index-aligned). */
     public static final String[] FONT_IDS = {
             FONT_OFF, "condensed", "serif", "mono", "casual", "cursive", "smallcaps", FONT_CUSTOM};
@@ -99,12 +122,15 @@ public final class Keys {
             null, "sans-serif-condensed", "serif", "monospace", "casual", "cursive",
             "sans-serif-smallcaps", null};
 
-    // Defaults. Yandex Music's signature yellow sits around hue 45-50.
-    public static final int DEF_ACCENT = 0xFFFF6FB5;
+    // Defaults: the Yume palette. Yandex Music's signature yellow sits around hue 50-60.
+    public static final int DEF_ACCENT = 0xFF9D7BFF;
     public static final int DEF_HUE_FROM = 35;
     public static final int DEF_HUE_TO = 65;
-    public static final int DEF_DARK_BG = 0xFF14101C;
-    public static final int DEF_LIGHT_BG = 0xFFFFF5FA;
-    public static final int DEF_TEXT_DARK = 0xFFFFE9F4;
-    public static final int DEF_TEXT_LIGHT = 0xFF2A1630;
+    public static final int DEF_DARK_BG = 0xFF0B0A1A;
+    public static final int DEF_LIGHT_BG = 0xFFF7F5FF;
+    public static final int DEF_TEXT_DARK = 0xFFEDE7FF;
+    public static final int DEF_TEXT_LIGHT = 0xFF1B1530;
+    public static final int DEF_DARK_SURFACE = 0xFF17142B;
+    public static final int DEF_LIGHT_SURFACE = 0xFFECE7FB;
+    public static final int DEF_LIKE = 0xFFFF6FD8;
 }

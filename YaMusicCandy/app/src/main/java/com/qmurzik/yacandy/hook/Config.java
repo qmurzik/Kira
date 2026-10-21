@@ -35,11 +35,20 @@ final class Config {
      * when the replacement alpha was given explicitly, otherwise the original alpha is kept.
      */
     final Map<Integer, Long> colorMap;
+    final int darkSurface;
+    final int lightSurface;
+    final boolean likeOn;
+    final int likeColor;
+    /** Text color on accent buttons, 0 = pick black/white by contrast. */
+    final int onAccent;
+    final boolean accentLinks;
     static final long EXPLICIT_ALPHA = 1L << 32;
 
     final String fontSource;
     final int fontWeightDelta;
     final int fontVersion;
+    final String fontBoldSource;
+    final int fontBoldVersion;
 
     final float uiScale;
     final float fontScale;
@@ -85,10 +94,19 @@ final class Config {
         textDark = p.getInt(Keys.TEXT_DARK_COLOR, Keys.DEF_TEXT_DARK);
         textLight = p.getInt(Keys.TEXT_LIGHT_COLOR, Keys.DEF_TEXT_LIGHT);
         colorMap = parseColorMap(p.getString(Keys.COLOR_MAP, ""));
+        darkSurface = p.getInt(Keys.DARK_SURFACE_COLOR, Keys.DEF_DARK_SURFACE);
+        lightSurface = p.getInt(Keys.LIGHT_SURFACE_COLOR, Keys.DEF_LIGHT_SURFACE);
+        likeOn = p.getBoolean(Keys.LIKE_ON, false);
+        likeColor = p.getInt(Keys.LIKE_COLOR, Keys.DEF_LIKE);
+        String on = p.getString(Keys.ON_ACCENT, "auto");
+        onAccent = "black".equals(on) ? 0xFF000000 : "white".equals(on) ? 0xFFFFFFFF : 0;
+        accentLinks = p.getBoolean(Keys.ACCENT_LINKS, true);
 
         fontSource = p.getString(Keys.FONT_SOURCE, Keys.FONT_OFF);
         fontWeightDelta = p.getInt(Keys.FONT_WEIGHT_DELTA, 0);
         fontVersion = p.getInt(Keys.FONT_VERSION, 0);
+        fontBoldSource = p.getString(Keys.FONT_BOLD_SOURCE, Keys.FONT_SAME);
+        fontBoldVersion = p.getInt(Keys.FONT_BOLD_VERSION, 0);
 
         uiScale = p.getInt(Keys.UI_SCALE, 100) / 100f;
         fontScale = p.getInt(Keys.FONT_SCALE, 100) / 100f;
@@ -212,7 +230,16 @@ final class Config {
     }
 
     boolean fontOn() {
-        return !Keys.FONT_OFF.equals(fontSource) || fontWeightDelta != 0;
+        return !Keys.FONT_OFF.equals(fontSource) || fontWeightDelta != 0 || boldFontOn();
+    }
+
+    boolean boldFontOn() {
+        return !Keys.FONT_SAME.equals(fontBoldSource);
+    }
+
+    /** Fonts that come from a remote file: user's own or bundled with the module. */
+    static boolean isFileFont(String source) {
+        return Keys.FONT_CUSTOM.equals(source) || (source != null && source.startsWith(Keys.FONT_BUNDLED));
     }
 
     boolean scaleOn() {

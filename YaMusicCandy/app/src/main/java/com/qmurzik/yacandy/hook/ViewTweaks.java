@@ -51,7 +51,7 @@ final class ViewTweaks {
                 for (int i = 0; i < sb.length(); i += 3000) {
                     m.logI(sb.substring(i, Math.min(sb.length(), i + 3000)));
                 }
-                Toast.makeText(activity, "Candy: дерево экрана записано в лог LSPosed",
+                Toast.makeText(activity, "Yume: дерево экрана записано в лог LSPosed",
                         Toast.LENGTH_SHORT).show();
             }, 1500);
         }

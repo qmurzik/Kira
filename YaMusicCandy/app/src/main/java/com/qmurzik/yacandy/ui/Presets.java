@@ -5,53 +5,66 @@ import com.qmurzik.yacandy.Keys;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Ready-made looks. Each preset is a full set of color/shape values. */
+/** Ready-made looks. Each preset is a full palette: accent, like, backgrounds, surfaces, text. */
 final class Presets {
     private Presets() {
     }
 
-    static final String[] NAMES = {"Оригинал", "Карамель", "Мята", "Океан", "Лаванда", "Закат", "AMOLED"};
-    static final int[] SWATCH = {0xFFFFDB4D, 0xFFFF6FB5, 0xFF3DDC97, 0xFF4FC3F7, 0xFFB388FF, 0xFFFF8A50, 0xFF000000};
+    static final String[] NAMES = {"Оригинал", "Yume", "Карамель", "Мята", "Океан", "Закат", "Графит", "AMOLED"};
+    static final int[] SWATCH = {0xFFFFDB4D, 0xFF9D7BFF, 0xFFFF6FB5, 0xFF3DDC97, 0xFF4FC3F7, 0xFFFF8A50,
+            0xFFB0BEC5, 0xFF000000};
+
+    // accent, like, dark bg, dark surface, light bg, light surface, text on dark, text on light
+    private static final int[][] PALETTES = {
+            null,
+            {0xFF9D7BFF, 0xFFFF6FD8, 0xFF0B0A1A, 0xFF17142B, 0xFFF7F5FF, 0xFFECE7FB, 0xFFEDE7FF, 0xFF1B1530},
+            {0xFFFF6FB5, 0xFFFF4F8B, 0xFF1A1020, 0xFF2A1A31, 0xFFFFF3F8, 0xFFF9E3EE, 0xFFFFE9F4, 0xFF2A1630},
+            {0xFF3DDC97, 0xFFFF6B6B, 0xFF0B1512, 0xFF15241F, 0xFFF1FFF8, 0xFFE0F4EA, 0xFFE6FFF4, 0xFF0F2A1F},
+            {0xFF4FC3F7, 0xFFFF6B8A, 0xFF08111C, 0xFF12202F, 0xFFF0F8FF, 0xFFE0EDF8, 0xFFE6F4FF, 0xFF0D2236},
+            {0xFFFF8A50, 0xFFFF4F6D, 0xFF1A0F0C, 0xFF2B1A15, 0xFFFFF6F0, 0xFFF8E6DC, 0xFFFFEDE4, 0xFF33190F},
+            {0xFFB0BEC5, 0xFFEF5350, 0xFF121417, 0xFF1E2226, 0xFFF5F6F7, 0xFFE8EAEC, 0xFFE8EBEE, 0xFF1E2226},
+            null,
+    };
 
     static Map<String, Object> values(int index) {
         Map<String, Object> v = new HashMap<>();
+        v.put(Keys.HUE_SHIFT, 0);
+        v.put(Keys.SATURATION, 100);
+        v.put(Keys.ON_ACCENT, "auto");
         if (index == 0) {
             v.put(Keys.COLORS_ON, false);
             v.put(Keys.CORNERS_ON, false);
-            v.put(Keys.SATURATION, 100);
-            v.put(Keys.HUE_SHIFT, 0);
             return v;
         }
         v.put(Keys.COLORS_ON, true);
-        v.put(Keys.HUE_SHIFT, 0);
-        v.put(Keys.TEXT_ON, false);
-        switch (index) {
-            case 1: candy(v, 0xFFFF6FB5, 0xFF1A1020, 0xFFFFF3F8, 115, 150); break;
-            case 2: candy(v, 0xFF3DDC97, 0xFF0E1A16, 0xFFF1FFF8, 110, 130); break;
-            case 3: candy(v, 0xFF4FC3F7, 0xFF0B1622, 0xFFF0F8FF, 110, 120); break;
-            case 4: candy(v, 0xFFB388FF, 0xFF15111F, 0xFFF7F2FF, 110, 150); break;
-            case 5: candy(v, 0xFFFF8A50, 0xFF1E1210, 0xFFFFF6F0, 115, 120); break;
-            default:
-                v.put(Keys.ACCENT_ON, false);
-                v.put(Keys.DARK_BG_ON, true);
-                v.put(Keys.DARK_BG_COLOR, 0xFF000000);
-                v.put(Keys.LIGHT_BG_ON, false);
-                v.put(Keys.SATURATION, 100);
-                v.put(Keys.CORNERS_ON, false);
-                break;
+        if (index == NAMES.length - 1) {
+            // AMOLED: pure black everywhere, original accent.
+            v.put(Keys.ACCENT_ON, false);
+            v.put(Keys.LIKE_ON, false);
+            v.put(Keys.DARK_BG_ON, true);
+            v.put(Keys.DARK_BG_COLOR, 0xFF000000);
+            v.put(Keys.DARK_SURFACE_COLOR, 0xFF0A0A0A);
+            v.put(Keys.LIGHT_BG_ON, false);
+            v.put(Keys.TEXT_ON, false);
+            v.put(Keys.CORNERS_ON, false);
+            return v;
         }
-        return v;
-    }
-
-    private static void candy(Map<String, Object> v, int accent, int darkBg, int lightBg, int sat, int corners) {
+        int[] p = PALETTES[index];
         v.put(Keys.ACCENT_ON, true);
-        v.put(Keys.ACCENT_COLOR, accent);
+        v.put(Keys.ACCENT_COLOR, p[0]);
+        v.put(Keys.LIKE_ON, true);
+        v.put(Keys.LIKE_COLOR, p[1]);
         v.put(Keys.DARK_BG_ON, true);
-        v.put(Keys.DARK_BG_COLOR, darkBg);
+        v.put(Keys.DARK_BG_COLOR, p[2]);
+        v.put(Keys.DARK_SURFACE_COLOR, p[3]);
         v.put(Keys.LIGHT_BG_ON, true);
-        v.put(Keys.LIGHT_BG_COLOR, lightBg);
-        v.put(Keys.SATURATION, sat);
+        v.put(Keys.LIGHT_BG_COLOR, p[4]);
+        v.put(Keys.LIGHT_SURFACE_COLOR, p[5]);
+        v.put(Keys.TEXT_ON, true);
+        v.put(Keys.TEXT_DARK_COLOR, p[6]);
+        v.put(Keys.TEXT_LIGHT_COLOR, p[7]);
         v.put(Keys.CORNERS_ON, true);
-        v.put(Keys.CORNER_FACTOR, corners);
+        v.put(Keys.CORNER_FACTOR, index == 1 ? 140 : 120);
+        return v;
     }
 }
