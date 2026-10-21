@@ -150,9 +150,17 @@ public final class Store implements XposedServiceHelper.OnServiceListener {
     private void pushAll() {
         SharedPreferences r = remote;
         if (r == null) return;
+        // Only push differences: every remote write makes the hooked app reload its screen.
+        Map<String, ?> current = r.getAll();
         SharedPreferences.Editor re = r.edit();
-        for (Map.Entry<String, ?> e : local.getAll().entrySet()) put(re, e.getKey(), e.getValue());
-        re.apply();
+        boolean dirty = false;
+        for (Map.Entry<String, ?> e : local.getAll().entrySet()) {
+            Object old = current.get(e.getKey());
+            if (old == null ? e.getValue() == null : old.equals(e.getValue())) continue;
+            put(re, e.getKey(), e.getValue());
+            dirty = true;
+        }
+        if (dirty) re.apply();
     }
 
     private static void put(SharedPreferences.Editor ed, String key, Object v) {
