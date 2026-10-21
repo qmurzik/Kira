@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Конфетка для Я.Музыки</string>
+    <string name="xposed_description">Кастомизация интерфейса Яндекс Музыки: цвета, темы, шрифты, скругления, масштаб и скрытие элементов.</string>
+</resources>
