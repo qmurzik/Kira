@@ -55,7 +55,7 @@ public class Main implements IXposedHookZygoteInit, IXposedHookLoadPackage {
                 try {
                     JsonFilter.init(rules);
                     JsonFilter.installOrgJson();
-                    OkHttpHooks.installJson(cl);
+                    OkHttpAuto.install(cl);
                 } catch (Throwable t) {
                     L.e("слой JSON", t);
                 }

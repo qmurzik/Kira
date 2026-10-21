@@ -1,45 +1,67 @@
 package ru.adblock.lsposed;
 
+import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.ViewTreeObserver;
+import android.widget.AbsListView;
 import android.widget.TextView;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 
 /**
  * Слой 4: UI-эвристика для классических View (Compose не покрывается — там работает слой 3).
  * <p>
- * Если TextView получает короткий текст-метку рекламы («Реклама», «erid: …», «Промо»…),
- * ближайший родитель, являющийся элементом RecyclerView, схлопывается до нулевого размера
- * через LayoutParams (не GONE). Исходные LayoutParams восстанавливаются при каждом
- * переиспользовании ячейки (RecyclerView.Adapter.bindViewHolder), поэтому обычные
- * карточки не пропадают.
+ * TextView с короткой меткой рекламы («Реклама», «erid: …», «Промо»…) запоминаются.
+ * Перед каждой отрисовкой окна состояние пересчитывается заново:
+ * <ul>
+ * <li>если метка видима и находится внутри элемента списка — элемент схлопывается до
+ * нулевого размера через LayoutParams (не GONE);</li>
+ * <li>если ячейку переиспользовали под обычный контент (метка скрыта или текст сменился) —
+ * исходные LayoutParams восстанавливаются.</li>
+ * </ul>
+ * Так обычные товары не пропадают, даже если RecyclerView/Adapter обфусцированы.
+ * Элемент списка определяется по структуре: LayoutParams ячейки RecyclerView ссылаются на
+ * ViewHolder, у которого есть поле с самой ячейкой (itemView); также поддерживается AbsListView.
  */
 final class UiHooks {
-    private static final String SAVED = "ruadblock.savedLp";
-    private static final String TRIGGER = "ruadblock.trigger";
     private static final int MAX_DEPTH = 20;
 
-    private static final String[] ADAPTERS = {
-            "androidx.recyclerview.widget.RecyclerView$Adapter",
-            "android.support.v7.widget.RecyclerView$Adapter",
-    };
-    private static final String[] VIEW_HOLDERS = {
-            "androidx.recyclerview.widget.RecyclerView$ViewHolder",
-            "android.support.v7.widget.RecyclerView$ViewHolder",
-    };
+    /** TextView, в которых сейчас текст-метка рекламы. */
+    private static final Set<TextView> LABELS = Collections.newSetFromMap(new WeakHashMap<>());
+    /** Схлопнутые элементы и их исходные LayoutParams. */
+    private static final Map<View, SavedLp> COLLAPSED = new WeakHashMap<>();
+    private static final Map<ViewTreeObserver, Boolean> OBSERVERS = new WeakHashMap<>();
 
-    private static final Map<Class<?>, Boolean> RV_CLASS_CACHE = new ConcurrentHashMap<>();
-    private static volatile Field itemViewField;
-    /** Были ли схлопывания в процессе — чтобы не трогать доп. поля на горячем пути setText. */
-    private static volatile boolean anyCollapsed;
+    /** Для класса LayoutParams: поле со ссылкой на ViewHolder (или NO_FIELD). */
+    private static final Map<Class<?>, Field> LP_HOLDER = new ConcurrentHashMap<>();
+    /** Для класса ViewHolder: поле itemView (или NO_FIELD). */
+    private static final Map<Class<?>, Field> HOLDER_ITEM = new ConcurrentHashMap<>();
+    /** Неудачные попытки найти ViewHolder по классу LayoutParams — после нескольких сдаёмся. */
+    private static final Map<Class<?>, Integer> LP_FAILS = new ConcurrentHashMap<>();
+    private static final int MAX_LP_FAILS = 10;
+    private static final Field NO_FIELD;
+
+    static {
+        Field f = null;
+        try {
+            f = UiHooks.class.getDeclaredField("MAX_DEPTH");
+        } catch (Throwable ignored) {
+        }
+        NO_FIELD = f;
+    }
 
     private UiHooks() {
     }
@@ -74,128 +96,166 @@ final class UiHooks {
     }
 
     static void install(ClassLoader cl) {
-        // Без восстановления при переиспользовании ячеек схлопывать нельзя — иначе пропадут
-        // обычные товары. Поэтому сначала ставим хук восстановления.
-        boolean restore = false;
-        for (int i = 0; i < ADAPTERS.length; i++) {
-            Class<?> adapter = XposedHelpers.findClassIfExists(ADAPTERS[i], cl);
-            Class<?> holder = XposedHelpers.findClassIfExists(VIEW_HOLDERS[i], cl);
-            if (adapter == null || holder == null) continue;
-            try {
-                Field f = holder.getField("itemView");
-                f.setAccessible(true);
-                itemViewField = f;
-                if (!XposedBridge.hookAllMethods(adapter, "bindViewHolder", RESTORE).isEmpty()) {
-                    restore = true;
-                    break;
-                }
-            } catch (Throwable t) {
-                L.e("не удалось хукнуть " + ADAPTERS[i] + ".bindViewHolder", t);
-            }
-        }
-        if (!restore) {
-            L.d("RecyclerView.Adapter.bindViewHolder не найден (обфускация?) — UI-слой отключён");
-            return;
-        }
         try {
             XposedHelpers.findAndHookMethod(TextView.class, "setText", CharSequence.class,
                     TextView.BufferType.class, boolean.class, int.class, SET_TEXT);
-            L.d("UI-хуки установлены");
+            L.i("UI-слой: хук TextView.setText установлен");
         } catch (Throwable t) {
             L.e("не удалось хукнуть TextView.setText", t);
         }
     }
-
-    private static final XC_MethodHook RESTORE = new XC_MethodHook() {
-        @Override
-        protected void beforeHookedMethod(MethodHookParam param) {
-            try {
-                Object holder = param.args.length > 0 ? param.args[0] : null;
-                Field f = itemViewField;
-                if (holder == null || f == null) return;
-                Object v = f.get(holder);
-                if (v instanceof View) restore((View) v);
-            } catch (Throwable t) {
-                L.e("ошибка восстановления ячейки", t);
-            }
-        }
-    };
 
     private static final XC_MethodHook SET_TEXT = new XC_MethodHook() {
         @Override
         protected void afterHookedMethod(MethodHookParam param) {
             try {
                 TextView tv = (TextView) param.thisObject;
-                if (!AdText.matches((CharSequence) param.args[0])) {
-                    if (!anyCollapsed) return;
-                    // Метка в той же ячейке получила обычный текст — разворачиваем обратно.
-                    Object prevItem = XposedHelpers.getAdditionalInstanceField(tv, TRIGGER);
-                    if (prevItem instanceof View) {
-                        XposedHelpers.removeAdditionalInstanceField(tv, TRIGGER);
-                        restore((View) prevItem);
-                    }
-                    return;
+                if (AdText.matches((CharSequence) param.args[0])) {
+                    LABELS.add(tv);
+                    // После прикрепления к окну подписываемся на его отрисовку.
+                    tv.post(() -> observe(tv));
+                } else if (!LABELS.isEmpty()) {
+                    LABELS.remove(tv);
                 }
-                // Текст ставится во время bind, когда ячейка ещё не прикреплена к RecyclerView
-                // и видимость метки может поменяться позже. Проверяем после прикрепления/разметки.
-                tv.post(() -> check(tv));
             } catch (Throwable t) {
                 L.e("ошибка UI-хука", t);
             }
         }
     };
 
-    private static void check(TextView tv) {
+    private static void observe(View v) {
         try {
-            if (!AdText.matches(tv.getText())) return;
-            View item = findItemView(tv);
-            if (item == null) return;
-            if (!visibleUpTo(tv, item)) return;
-            collapse(item, tv);
+            if (!v.isAttachedToWindow()) return;
+            ViewTreeObserver vto = v.getViewTreeObserver();
+            if (!vto.isAlive() || OBSERVERS.containsKey(vto)) return;
+            OBSERVERS.put(vto, Boolean.TRUE);
+            vto.addOnPreDrawListener(UiHooks::reconcile);
+            reconcile();
         } catch (Throwable t) {
-            L.e("ошибка проверки метки рекламы", t);
+            L.e("ошибка подписки на отрисовку", t);
         }
     }
 
-    /** Ближайший предок, чей родитель — RecyclerView (то есть itemView). */
+    /** Возвращает false (отменить кадр), если разметка изменилась — следующий кадр будет верным. */
+    private static boolean reconcile() {
+        if (LABELS.isEmpty() && COLLAPSED.isEmpty()) return true;
+        boolean changed = false;
+        try {
+            Map<View, Boolean> want = new IdentityHashMap<>();
+            for (TextView tv : new ArrayList<>(LABELS)) {
+                if (tv == null || !tv.isAttachedToWindow()) continue;
+                if (!AdText.matches(tv.getText())) continue;
+                View item = findItemView(tv);
+                if (item != null && visibleUpTo(tv, item)) want.put(item, Boolean.TRUE);
+            }
+            // Восстанавливаем прикреплённые ячейки, где рекламы больше нет.
+            for (View item : new ArrayList<>(COLLAPSED.keySet())) {
+                if (item == null || !item.isAttachedToWindow() || want.containsKey(item)) continue;
+                restore(item);
+                changed = true;
+            }
+            for (View item : want.keySet()) {
+                if (!COLLAPSED.containsKey(item) && collapse(item)) changed = true;
+            }
+        } catch (Throwable t) {
+            L.e("ошибка UI-слоя", t);
+        }
+        return !changed;
+    }
+
+    /** Ближайший предок метки, являющийся элементом списка. */
     private static View findItemView(View v) {
         View cur = v;
         for (int d = 0; d < MAX_DEPTH; d++) {
             ViewParent p = cur.getParent();
             if (!(p instanceof ViewGroup)) return null;
-            if (isRecyclerView(p.getClass())) {
-                ViewGroup rv = (ViewGroup) p;
-                // ViewPager2 тоже RecyclerView внутри — страницы целиком не схлопываем.
-                ViewParent outer = rv.getParent();
-                if (outer != null && outer.getClass().getName().contains("ViewPager2")) return null;
-                // Ячейка размером со весь список — скорее страница/контейнер, а не карточка.
-                if (rv.getHeight() > 0 && cur.getHeight() >= rv.getHeight()
-                        && rv.getWidth() > 0 && cur.getWidth() >= rv.getWidth()) {
+            ViewGroup list = (ViewGroup) p;
+            if (list instanceof AbsListView || isRecyclerItem(cur)) {
+                // Элемент размером со весь список — это страница (ViewPager2) или контейнер.
+                if (list.getWidth() > 0 && list.getHeight() > 0 && !COLLAPSED.containsKey(cur)
+                        && cur.getWidth() >= list.getWidth() && cur.getHeight() >= list.getHeight() * 9 / 10) {
                     return null;
                 }
                 return cur;
             }
-            cur = (View) p;
+            cur = list;
         }
         return null;
     }
 
-    private static boolean isRecyclerView(Class<?> c) {
-        Boolean cached = RV_CLASS_CACHE.get(c);
-        if (cached != null) return cached;
-        boolean r = false;
-        for (Class<?> k = c; k != null && k != View.class; k = k.getSuperclass()) {
-            if (k.getName().endsWith(".RecyclerView")) {
-                r = true;
-                break;
+    /** У ячейки RecyclerView LayoutParams → ViewHolder → itemView == сама ячейка. */
+    private static boolean isRecyclerItem(View child) {
+        ViewGroup.LayoutParams lp = child.getLayoutParams();
+        if (lp == null) return false;
+        Class<?> lpc = lp.getClass();
+        if (lpc.getName().startsWith("android.")) return false;
+        Field holderField = LP_HOLDER.get(lpc);
+        if (holderField == null) {
+            holderField = findHolderField(lp, child);
+            if (holderField == null) {
+                Integer fails = LP_FAILS.get(lpc);
+                int n = fails == null ? 1 : fails + 1;
+                LP_FAILS.put(lpc, n);
+                if (n >= MAX_LP_FAILS) LP_HOLDER.put(lpc, NO_FIELD);
+                return false;
+            }
+            LP_HOLDER.put(lpc, holderField);
+        }
+        if (holderField == NO_FIELD) return false;
+        try {
+            Object holder = holderField.get(lp);
+            if (holder == null) return false;
+            Field item = itemField(holder.getClass(), holder, child);
+            return item != null && item.get(holder) == child;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private static Field findHolderField(ViewGroup.LayoutParams lp, View child) {
+        for (Class<?> k = lp.getClass(); k != null && !k.getName().startsWith("android."); k = k.getSuperclass()) {
+            for (Field f : k.getDeclaredFields()) {
+                Class<?> t = f.getType();
+                if (Modifier.isStatic(f.getModifiers()) || t.isPrimitive() || t == Rect.class
+                        || t.isArray() || t.getName().startsWith("java.") || View.class.isAssignableFrom(t)) {
+                    continue;
+                }
+                try {
+                    f.setAccessible(true);
+                    Object holder = f.get(lp);
+                    if (holder != null && itemField(holder.getClass(), holder, child) != null) return f;
+                } catch (Throwable ignored) {
+                }
             }
         }
-        RV_CLASS_CACHE.put(c, r);
-        return r;
+        return null;
+    }
+
+    private static Field itemField(Class<?> holderClass, Object holder, View child) {
+        Field cached = HOLDER_ITEM.get(holderClass);
+        if (cached != null) return cached == NO_FIELD ? null : cached;
+        Field found = null;
+        outer:
+        for (Class<?> k = holderClass; k != null && k != Object.class; k = k.getSuperclass()) {
+            for (Field f : k.getDeclaredFields()) {
+                if (Modifier.isStatic(f.getModifiers()) || !View.class.isAssignableFrom(f.getType())) continue;
+                try {
+                    f.setAccessible(true);
+                    if (f.get(holder) == child) {
+                        found = f;
+                        break outer;
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+        // Отрицательный результат не кэшируем: у ViewHolder могут быть и другие View-поля.
+        if (found != null) HOLDER_ITEM.put(holderClass, found);
+        return found;
     }
 
     private static boolean visibleUpTo(View tv, View item) {
-        if (!tv.isAttachedToWindow() || tv.getAlpha() == 0f) return false;
+        if (tv.getAlpha() == 0f) return false;
         for (View v = tv; v != null; ) {
             if (v.getVisibility() != View.VISIBLE) return false;
             if (v == item) return true;
@@ -205,29 +265,25 @@ final class UiHooks {
         return false;
     }
 
-    private static void collapse(View item, TextView trigger) {
-        if (XposedHelpers.getAdditionalInstanceField(item, SAVED) != null) return;
+    private static boolean collapse(View item) {
         ViewGroup.LayoutParams lp = item.getLayoutParams();
-        if (lp == null) return;
-        XposedHelpers.setAdditionalInstanceField(item, SAVED, new SavedLp(lp));
-        XposedHelpers.setAdditionalInstanceField(trigger, TRIGGER, item);
-        anyCollapsed = true;
+        if (lp == null) return false;
+        COLLAPSED.put(item, new SavedLp(lp));
         lp.width = 0;
         lp.height = 0;
         if (lp instanceof ViewGroup.MarginLayoutParams) {
             ((ViewGroup.MarginLayoutParams) lp).setMargins(0, 0, 0, 0);
         }
         item.setLayoutParams(lp);
-        L.d("UI: схлопнута рекламная ячейка " + item.getClass().getName());
+        Stats.hit("ui", "схлопнута рекламная ячейка " + item.getClass().getName());
+        return true;
     }
 
     private static void restore(View item) {
-        if (!anyCollapsed) return;
-        Object saved = XposedHelpers.removeAdditionalInstanceField(item, SAVED);
-        if (!(saved instanceof SavedLp)) return;
+        SavedLp saved = COLLAPSED.remove(item);
         ViewGroup.LayoutParams lp = item.getLayoutParams();
-        if (lp == null) return;
-        ((SavedLp) saved).apply(lp);
+        if (saved == null || lp == null) return;
+        saved.apply(lp);
         item.setLayoutParams(lp);
     }
 }

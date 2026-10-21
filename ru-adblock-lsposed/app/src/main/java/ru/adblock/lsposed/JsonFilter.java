@@ -43,7 +43,7 @@ final class JsonFilter {
                     String s = (String) arg;
                     if (!mightContainAds(s)) return;
                     int removed = filterTree(param.thisObject);
-                    if (removed > 0) L.d("org.json: удалено рекламных элементов: " + removed);
+                    if (removed > 0) Stats.hit("json", "org.json: удалено рекламных элементов: " + removed);
                 } catch (Throwable t) {
                     L.e("ошибка фильтра org.json", t);
                 }
@@ -52,7 +52,7 @@ final class JsonFilter {
         try {
             XposedHelpers.findAndHookConstructor(JSONObject.class, String.class, after);
             XposedHelpers.findAndHookConstructor(JSONArray.class, String.class, after);
-            L.d("org.json хуки установлены");
+            L.i("JSON-слой: хуки org.json установлены");
         } catch (Throwable t) {
             L.e("не удалось установить хуки org.json", t);
         }
@@ -81,7 +81,7 @@ final class JsonFilter {
             if (!(root instanceof JSONObject) && !(root instanceof JSONArray)) return null;
             int removed = filterTree(root);
             if (removed == 0) return null;
-            L.d("okhttp: удалено рекламных элементов: " + removed);
+            Stats.hit("json", "OkHttp: удалено рекламных элементов: " + removed);
             return root.toString();
         } catch (Throwable t) {
             return null;

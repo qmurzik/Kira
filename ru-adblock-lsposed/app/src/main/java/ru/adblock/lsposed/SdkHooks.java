@@ -166,7 +166,9 @@ final class SdkHooks {
                 }
             }
         }
-        if (loads > 0) L.d(spec.sdk + ": " + className + " — хуков загрузки: " + loads);
+        if (loads > 0) {
+            L.i("SDK-слой: " + className + " — хуков загрузки: " + loads);
+        }
     }
 
     private static final XC_MethodHook LISTENER_CAPTURE = new XC_MethodHook() {
@@ -241,8 +243,8 @@ final class SdkHooks {
                             if (param.args[i] != null) candidates.add(param.args[i]);
                         }
                     }
-                    L.d(spec.sdk + ": заблокирована загрузка " + param.method.getDeclaringClass().getName()
-                            + "." + param.method.getName());
+                    Stats.hit("sdk", spec.sdk + ": заблокирована загрузка "
+                            + param.method.getDeclaringClass().getName() + "." + param.method.getName());
                     dispatchNoFill(candidates, spec, param.thisObject);
                 } catch (Throwable t) {
                     L.e(spec.sdk + ": ошибка блокировки загрузки", t);
