@@ -821,8 +821,12 @@ public class MainActivity extends Activity implements Store.Listener {
     private Typeface preview(String id) {
         try {
             if (id.startsWith(Keys.FONT_BUNDLED)) {
-                return Typeface.createFromAsset(getAssets(),
-                        "fonts/" + id.substring(Keys.FONT_BUNDLED.length()) + ".ttf");
+                // Variable fonts default to their first instance (often Thin); show Regular.
+                Typeface t = new Typeface.Builder(getAssets(),
+                        "fonts/" + id.substring(Keys.FONT_BUNDLED.length()) + ".ttf")
+                        .setFontVariationSettings("'wght' 400")
+                        .build();
+                if (t != null) return t;
             }
             for (int i = 0; i < Keys.FONT_IDS.length; i++) {
                 if (Keys.FONT_IDS[i].equals(id) && Keys.FONT_FAMILIES[i] != null) {
