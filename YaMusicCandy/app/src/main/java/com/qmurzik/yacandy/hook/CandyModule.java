@@ -75,6 +75,37 @@ public class CandyModule extends XposedModule {
         return appInfo.dataDir;
     }
 
+    ClassLoader appLoader() {
+        return appLoader;
+    }
+
+    private Finder finder;
+
+    /** Dex index of the running app build, loaded on first use (cached per build on disk). */
+    synchronized Finder finder() {
+        if (finder == null) finder = Finder.load(this, appInfo, appLoader);
+        return finder;
+    }
+
+    private final java.util.Map<String, String> statuses =
+            java.util.Collections.synchronizedMap(new java.util.LinkedHashMap<>());
+
+    /** Records what a feature found in this app build; shown on the module's compatibility page. */
+    void status(String feature, String detail) {
+        statuses.put(feature, detail);
+    }
+
+    /** "feature\tdetail" lines for the settings app. */
+    String statusReport() {
+        StringBuilder sb = new StringBuilder();
+        synchronized (statuses) {
+            for (java.util.Map.Entry<String, String> e : statuses.entrySet()) {
+                sb.append(e.getKey()).append('\t').append(e.getValue()).append('\n');
+            }
+        }
+        return sb.toString();
+    }
+
     /** Current color engine, or null when color features are off. */
     ColorEngine colors() {
         Config c = cfg;
@@ -133,7 +164,7 @@ public class CandyModule extends XposedModule {
         }
         if (c.experimentsOn() && !experimentHooks) {
             experimentHooks = true;
-            Thread scan = new Thread(() -> ExperimentHooks.install(this, Finder.load(this, appInfo, appLoader)),
+            Thread scan = new Thread(() -> ExperimentHooks.install(this, finder()),
                     "YaCandy-scan");
             scan.start();
             if (atStart) {
@@ -208,6 +239,7 @@ public class CandyModule extends XposedModule {
             activity.getWindow().getDecorView().invalidate();
         }
         ViewTweaks.onResume(this, activity);
+        SettingsEntry.onResume(this, activity);
         Config c = cfg;
         if (c != null) SystemHooks.onResume(c, activity);
     }

@@ -12,6 +12,9 @@ public final class Keys {
     public static final String GROUP = "candy";
     public static final String FONT_FILE = "custom_font";
 
+    /** Index of the last applied preset (settings app only). */
+    public static final String PRESET = "preset";
+
     // Colors
     public static final String COLORS_ON = "colors_on";
     public static final String ACCENT_ON = "accent_on";
@@ -59,6 +62,16 @@ public final class Keys {
 
     // Behaviour
     public static final String LIVE_APPLY = "live_apply";
+
+    // Opening Yume from Yandex Music
+    public static final String ENTRY_BUTTON = "entry_button";
+    public static final String ENTRY_SHORTCUT = "entry_shortcut";
+    public static final String ACTION_SETTINGS = "com.qmurzik.yume.SETTINGS";
+    /** "feature\tdetail" lines describing what the hooks found in the running app build. */
+    public static final String EXTRA_STATUS = "yume_status";
+    public static final String EXTRA_APP_VERSION = "yume_app_version";
+    /** Opens a settings page directly: colors, fonts, shape, clean, player, behaviour, experiments, more. */
+    public static final String EXTRA_PAGE = "yume_page";
 
     // Clean interface: main-screen blocks (by group id, see FeedBlocks), tabs, promo endpoints
     public static final String HIDE_BLOCKS = "hide_blocks";

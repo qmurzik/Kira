@@ -25,9 +25,22 @@ final class FeedHooks {
     private static final Set<String> logged = ConcurrentHashMap.newKeySet();
 
     static void install(CandyModule m, ClassLoader cl) {
+        List<Class<?>> adapters = new ArrayList<>();
         try {
-            Class<?> adapter = Class.forName(ADAPTER, false, cl);
-            int hooked = 0;
+            adapters.add(Class.forName(ADAPTER, false, cl));
+        } catch (Throwable t) {
+            // Renamed in this build: take every Gson deserializer of the skeleton packages.
+            for (DexScanner.MethodRef r : m.finder().users(Finder.JSON_DESERIALIZERS)) {
+                if (!r.owner.startsWith("Lcom/yandex/music/shared/skeleton/")) continue;
+                try {
+                    adapters.add(m.finder().classOf(r));
+                } catch (Throwable ignored) {
+                    // skip
+                }
+            }
+        }
+        int hooked = 0;
+        for (Class<?> adapter : adapters) {
             for (Method method : adapter.getDeclaredMethods()) {
                 Class<?>[] p = method.getParameterTypes();
                 if (p.length != 3 || !"com.google.gson.JsonElement".equals(p[0].getName())) continue;
@@ -44,10 +57,9 @@ final class FeedHooks {
                 });
                 hooked++;
             }
-            m.logI("feed hooks: " + hooked);
-        } catch (Throwable t) {
-            m.logE("feed hooks", t);
         }
+        m.logI("feed hooks: " + hooked);
+        m.status("Блоки главной", hooked > 0 ? "найдено адаптеров: " + adapters.size() : "не найдено");
     }
 
     private static Object filter(CandyModule m, Config c, Object block) throws ReflectiveOperationException {

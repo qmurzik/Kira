@@ -26,11 +26,17 @@ final class Presets {
             null,
     };
 
+    /** accent, like, dark bg, dark surface, light bg, light surface, text on dark, text on light; null = stock. */
+    static int[] palette(int index) {
+        return PALETTES[index];
+    }
+
     static Map<String, Object> values(int index) {
         Map<String, Object> v = new HashMap<>();
         v.put(Keys.HUE_SHIFT, 0);
         v.put(Keys.SATURATION, 100);
         v.put(Keys.ON_ACCENT, "auto");
+        v.put(Keys.PRESET, index);
         if (index == 0) {
             v.put(Keys.COLORS_ON, false);
             v.put(Keys.CORNERS_ON, false);

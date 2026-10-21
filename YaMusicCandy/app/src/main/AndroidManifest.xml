@@ -25,6 +25,11 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="de.robv.android.xposed.category.MODULE_SETTINGS" />
             </intent-filter>
+            <!-- Opened from inside Yandex Music (button on its settings screen, launcher shortcut). -->
+            <intent-filter>
+                <action android:name="com.qmurzik.yume.SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>

@@ -67,11 +67,31 @@ final class DexScanner {
         }
     }
 
-    /** Returns, for every requested string, the methods whose code loads it. */
+    /** Prefix of a query that lists classes implementing an interface (descriptor follows). */
+    static final String IMPL = "impl:";
+
+    /**
+     * Returns, for every requested string, the methods whose code loads it. A query starting with
+     * {@link #IMPL} instead returns classes implementing that interface (as a MethodRef named "").
+     */
     static Map<String, List<MethodRef>> findStringUsers(String apkPath, Collection<String> strings)
             throws IOException {
         Map<String, List<MethodRef>> out = new HashMap<>();
         for (String s : strings) out.put(s, new ArrayList<>());
+        scanApk(apkPath, strings, out);
+        return out;
+    }
+
+    static Map<String, List<MethodRef>> findStringUsers(Collection<String> apkPaths, Collection<String> strings)
+            throws IOException {
+        Map<String, List<MethodRef>> out = new HashMap<>();
+        for (String s : strings) out.put(s, new ArrayList<>());
+        for (String apk : apkPaths) scanApk(apk, strings, out);
+        return out;
+    }
+
+    private static void scanApk(String apkPath, Collection<String> strings, Map<String, List<MethodRef>> out)
+            throws IOException {
         try (ZipFile zip = new ZipFile(apkPath)) {
             Enumeration<? extends ZipEntry> entries = zip.entries();
             while (entries.hasMoreElements()) {
@@ -85,7 +105,6 @@ final class DexScanner {
                 new Dex(dex).scan(strings, out);
             }
         }
-        return out;
     }
 
     static String descriptorToName(String d) {
@@ -150,10 +169,16 @@ final class DexScanner {
             Map<Integer, String> targets = new HashMap<>();
             List<byte[]> needles = new ArrayList<>();
             List<String> needleStrings = new ArrayList<>();
+            List<String> impls = new ArrayList<>();
             for (String w : wanted) {
+                if (w.startsWith(IMPL)) {
+                    impls.add(w);
+                    continue;
+                }
                 needles.add(w.getBytes(StandardCharsets.UTF_8));
                 needleStrings.add(w);
             }
+            if (!impls.isEmpty()) findImplementers(impls, out);
             for (int i = 0; i < stringCount; i++) {
                 pos = u32(stringIds + i * 4);
                 int len = uleb();
@@ -197,6 +222,34 @@ final class DexScanner {
                         if (hit != null) out.get(hit).add(method(methodIdx, access));
                         pos = saved;
                     }
+                }
+            }
+        }
+
+        private void findImplementers(List<String> queries, Map<String, List<MethodRef>> out) {
+            // Resolve each wanted interface to its type index once, then compare indices.
+            Map<Integer, String> wanted = new HashMap<>();
+            int typeCount = u32(0x40);
+            for (String q : queries) {
+                String d = q.substring(IMPL.length());
+                for (int t = 0; t < typeCount; t++) {
+                    if (type(t).equals(d)) {
+                        wanted.put(t, q);
+                        break;
+                    }
+                }
+            }
+            if (wanted.isEmpty()) return;
+            int classCount = u32(0x60);
+            int classDefs = u32(0x64);
+            for (int c = 0; c < classCount; c++) {
+                int def = classDefs + c * 32;
+                int ifacesOff = u32(def + 12);
+                if (ifacesOff == 0) continue;
+                int n = u32(ifacesOff);
+                for (int k = 0; k < n; k++) {
+                    String q = wanted.get(u16(ifacesOff + 4 + k * 2));
+                    if (q != null) out.get(q).add(new MethodRef(type(u32(def)), "", new String[0], "V", u32(def + 4)));
                 }
             }
         }

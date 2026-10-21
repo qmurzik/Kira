@@ -38,7 +38,9 @@ final class TelemetryHooks {
                     m.hookSafely(method, chain -> off(m) ? chain.proceed(new Object[]{false}) : chain.proceed());
                 }
             }
+            m.status("Телеметрия", "AppMetrica найдена");
         } catch (Throwable t) {
+            m.status("Телеметрия", "AppMetrica не найдена, только DNS");
             m.logE("AppMetrica hooks", t);
         }
         try {

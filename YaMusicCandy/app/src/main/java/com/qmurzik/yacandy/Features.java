@@ -84,6 +84,23 @@ public final class Features {
             "com.yandex.music.shared.wave.screen.wordsinwave.data.WaveScreenWordsInWaveApi",
     };
 
+    // Backend paths of the same endpoints (Retrofit annotation values survive obfuscation and
+    // interface renames). A trailing '/' means "starts with", otherwise the path must match exactly.
+    public static final String[] PATH_POPUPS = {
+            "dynamic-pages/v2/trigger/", "dynamic-pages/v3/trigger/", "dynamic-pages/mediacrm/",
+    };
+    public static final String[] PATH_SPLASH = {"dynamic-pages/splash"};
+    public static final String[] PATH_SPECIAL_HEADER = {"landing/special-header"};
+    public static final String[] PATH_INFORMERS = {"player-informers"};
+    public static final String[] PATH_PB_SIMILAR = {"tracks/{trackId}/similar"};
+    public static final String[] PATH_PB_ARTISTS = {"artists/blocks/player-info"};
+    public static final String[] PATH_PB_CONCERTS = {"concerts/landing/artists"};
+    public static final String[] PATH_PB_NONMUSIC = {
+            "non-music/blocks/books/{albumId}/about", "non-music/blocks/podcasts/{albumId}/about",
+            "non-music/blocks/podcasts/episodes/{trackId}/about",
+    };
+    public static final String[] PATH_WAVE_WORDS = {"words/cards", "words/big-cards", "words/cards/feedback"};
+
     /** Third-party trackers; resolved to "no such host" when telemetry is off. */
     public static final String[] TRACKER_HOSTS = {
             "appsflyer", "app.adjust.com", "crashlytics.com", "firebaselogging", "app-measurement.com",

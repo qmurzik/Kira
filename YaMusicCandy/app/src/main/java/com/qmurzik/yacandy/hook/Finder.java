@@ -22,8 +22,9 @@ import java.util.Map;
 final class Finder {
     static final String EXP_RESOLVER = "Unknown experiment - ";
     static final String EXP_BASE = "_NotReady";
-    private static final List<String> QUERIES = Arrays.asList(EXP_RESOLVER, EXP_BASE);
-    private static final int CACHE_VERSION = 1;
+    static final String JSON_DESERIALIZERS = DexScanner.IMPL + "Lcom/google/gson/JsonDeserializer;";
+    private static final List<String> QUERIES = Arrays.asList(EXP_RESOLVER, EXP_BASE, JSON_DESERIALIZERS);
+    private static final int CACHE_VERSION = 2;
 
     private final ClassLoader loader;
     private final Map<String, List<DexScanner.MethodRef>> found;
@@ -41,9 +42,12 @@ final class Finder {
         if (found == null) {
             long t = System.currentTimeMillis();
             try {
-                found = DexScanner.findStringUsers(app.sourceDir, QUERIES);
+                List<String> apks = new ArrayList<>();
+                apks.add(app.sourceDir);
+                if (app.splitSourceDirs != null) apks.addAll(Arrays.asList(app.splitSourceDirs));
+                found = DexScanner.findStringUsers(apks, QUERIES);
                 writeCache(cache, key, found);
-                m.logI("dex scan took " + (System.currentTimeMillis() - t) + " ms: " + found);
+                m.logI("dex scan took " + (System.currentTimeMillis() - t) + " ms");
             } catch (Throwable e) {
                 m.logE("dex scan failed", e);
                 found = new HashMap<>();

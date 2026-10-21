@@ -60,6 +60,8 @@ final class Config {
     final Set<String> hideTexts;
     final boolean inspector;
     final boolean liveApply;
+    final boolean entryButton;
+    final boolean entryShortcut;
 
     /** Skeleton block DTO simple names and backend block types to drop. */
     final Set<String> hiddenDtos;
@@ -69,6 +71,8 @@ final class Config {
     final boolean feedLog;
     /** Full names of Retrofit API interfaces whose calls are failed. */
     final Set<String> blockedApis;
+    /** Endpoint paths whose calls are failed, see {@link Features#PATH_POPUPS}. */
+    final Set<String> blockedPaths;
     final boolean telemetryOff;
     final boolean promoPushOff;
     final boolean keepScreenOn;
@@ -118,6 +122,8 @@ final class Config {
         hideTexts = parseLines(p.getString(Keys.HIDE_TEXTS, ""), true);
         inspector = p.getBoolean(Keys.INSPECTOR, false);
         liveApply = p.getBoolean(Keys.LIVE_APPLY, true);
+        entryButton = p.getBoolean(Keys.ENTRY_BUTTON, true);
+        entryShortcut = p.getBoolean(Keys.ENTRY_SHORTCUT, true);
 
         Set<String> dtos = new HashSet<>();
         Set<String> groups = parseLines(p.getString(Keys.HIDE_BLOCKS, ""), false);
@@ -138,16 +144,18 @@ final class Config {
         feedLog = p.getBoolean(Keys.FEED_LOG, false);
 
         Set<String> apis = new HashSet<>();
-        block(apis, p, Keys.NO_POPUPS, Features.API_POPUPS);
-        block(apis, p, Keys.NO_SPLASH, Features.API_SPLASH);
-        block(apis, p, Keys.NO_SPECIAL_HEADER, Features.API_SPECIAL_HEADER);
-        block(apis, p, Keys.NO_INFORMERS, Features.API_INFORMERS);
-        block(apis, p, Keys.PB_SIMILAR, Features.API_PB_SIMILAR);
-        block(apis, p, Keys.PB_ARTISTS, Features.API_PB_ARTISTS);
-        block(apis, p, Keys.PB_CONCERTS, Features.API_PB_CONCERTS);
-        block(apis, p, Keys.PB_NONMUSIC, Features.API_PB_NONMUSIC);
-        block(apis, p, Keys.NO_WAVE_WORDS, Features.API_WAVE_WORDS);
+        Set<String> paths = new HashSet<>();
+        block(apis, paths, p, Keys.NO_POPUPS, Features.API_POPUPS, Features.PATH_POPUPS);
+        block(apis, paths, p, Keys.NO_SPLASH, Features.API_SPLASH, Features.PATH_SPLASH);
+        block(apis, paths, p, Keys.NO_SPECIAL_HEADER, Features.API_SPECIAL_HEADER, Features.PATH_SPECIAL_HEADER);
+        block(apis, paths, p, Keys.NO_INFORMERS, Features.API_INFORMERS, Features.PATH_INFORMERS);
+        block(apis, paths, p, Keys.PB_SIMILAR, Features.API_PB_SIMILAR, Features.PATH_PB_SIMILAR);
+        block(apis, paths, p, Keys.PB_ARTISTS, Features.API_PB_ARTISTS, Features.PATH_PB_ARTISTS);
+        block(apis, paths, p, Keys.PB_CONCERTS, Features.API_PB_CONCERTS, Features.PATH_PB_CONCERTS);
+        block(apis, paths, p, Keys.PB_NONMUSIC, Features.API_PB_NONMUSIC, Features.PATH_PB_NONMUSIC);
+        block(apis, paths, p, Keys.NO_WAVE_WORDS, Features.API_WAVE_WORDS, Features.PATH_WAVE_WORDS);
         blockedApis = apis;
+        blockedPaths = paths;
 
         telemetryOff = p.getBoolean(Keys.NO_TELEMETRY, false);
         promoPushOff = p.getBoolean(Keys.NO_PROMO_PUSH, false);
@@ -211,8 +219,20 @@ final class Config {
         return !expOverrides.isEmpty() || expDump;
     }
 
-    private static void block(Set<String> out, SharedPreferences p, String key, String[] apis) {
-        if (p.getBoolean(key, false)) out.addAll(Arrays.asList(apis));
+    private static void block(Set<String> apis, Set<String> paths, SharedPreferences p, String key,
+                              String[] names, String[] endpoints) {
+        if (!p.getBoolean(key, false)) return;
+        apis.addAll(Arrays.asList(names));
+        paths.addAll(Arrays.asList(endpoints));
+    }
+
+    /** Whether a Retrofit endpoint path (leading '/' stripped) is switched off. */
+    boolean pathBlocked(String path) {
+        if (path == null || path.isEmpty() || blockedPaths.isEmpty()) return false;
+        for (String b : blockedPaths) {
+            if (b.endsWith("/") ? path.startsWith(b) : path.equals(b)) return true;
+        }
+        return false;
     }
 
     /** Lines like {@code androidWaveShake = on}. */

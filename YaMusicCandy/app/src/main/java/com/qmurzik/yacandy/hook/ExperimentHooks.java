@@ -28,6 +28,7 @@ final class ExperimentHooks {
     private static volatile boolean dumpScheduled;
 
     static void install(CandyModule m, Finder f) {
+        m.status("Эксперименты", "резолвер не найден");
         for (DexScanner.MethodRef ref : f.users(Finder.EXP_RESOLVER)) {
             if (!ref.isStatic() || ref.params.length != 2 || !"Ljava/lang/String;".equals(ref.params[1])
                     || !"Ljava/lang/String;".equals(ref.ret)) continue;
@@ -43,6 +44,7 @@ final class ExperimentHooks {
                     return forced != null ? forced : result;
                 });
                 m.logI("experiments resolver: " + ref);
+                m.status("Эксперименты", "резолвер найден");
             } catch (Throwable t) {
                 m.logE("experiments resolver", t);
             }

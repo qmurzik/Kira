@@ -3,6 +3,7 @@ package com.qmurzik.yacandy.hook;
 import com.qmurzik.yacandy.Features;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -10,6 +11,8 @@ import java.lang.reflect.Proxy;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Network-level switches that don't depend on obfuscated code:
@@ -35,27 +38,61 @@ final class NetHooks {
                 Class<?>[] ifaces = (Class<?>[]) chain.getArg(1);
                 InvocationHandler h = (InvocationHandler) chain.getArg(2);
                 if (c == null || ifaces == null || ifaces.length != 1 || h == null
-                        || h instanceof ApiGate || h instanceof DeadCall) {
+                        || h instanceof ApiGate || h instanceof DeadCall || !isRetrofitService(ifaces[0])) {
                     return chain.proceed();
                 }
-                String name = ifaces[0].getName();
-                if (!name.endsWith("Api") || !isKnown(name)) return chain.proceed();
-                return chain.proceed(new Object[]{chain.getArg(0), ifaces, new ApiGate(m, name, h)});
+                return chain.proceed(new Object[]{chain.getArg(0), ifaces, new ApiGate(m, ifaces[0].getName(), h)});
             });
+            m.status("Промо-запросы", "перехват Retrofit");
         } catch (Throwable t) {
             m.logE("api blocker", t);
         }
     }
 
-    /** Only interfaces the module knows about are wrapped; everything else is untouched. */
-    private static boolean isKnown(String name) {
-        for (String[] group : new String[][]{Features.API_POPUPS, Features.API_SPLASH,
-                Features.API_SPECIAL_HEADER, Features.API_INFORMERS, Features.API_PB_SIMILAR,
-                Features.API_PB_ARTISTS, Features.API_PB_CONCERTS, Features.API_PB_NONMUSIC,
-                Features.API_WAVE_WORDS}) {
-            for (String s : group) if (s.equals(name)) return true;
+    /** A Retrofit service interface has methods returning retrofit2.Call. */
+    private static boolean isRetrofitService(Class<?> iface) {
+        try {
+            for (Method method : iface.getDeclaredMethods()) {
+                if (callInterface(method.getReturnType()) != null) return true;
+            }
+        } catch (Throwable ignored) {
+            // unusual interface, leave it alone
         }
         return false;
+    }
+
+    private static final Map<Method, String> paths = new ConcurrentHashMap<>();
+
+    /**
+     * The endpoint path of a Retrofit method: the String value of its HTTP annotation. Annotation
+     * classes are obfuscated, so any String-valued annotation member containing a path is taken.
+     */
+    static String path(Method method) {
+        String cached = paths.get(method);
+        if (cached != null) return cached;
+        String found = "";
+        try {
+            for (Annotation a : method.getDeclaredAnnotations()) {
+                for (Method member : a.annotationType().getDeclaredMethods()) {
+                    if (member.getReturnType() != String.class || member.getParameterCount() != 0) continue;
+                    member.setAccessible(true);
+                    Object v = member.invoke(a);
+                    if (v instanceof String && !((String) v).isEmpty() && !((String) v).contains(" ")
+                            && (((String) v).contains("/") || ((String) v).matches("[a-z0-9-]+"))) {
+                        String sv = (String) v;
+                        found = sv.startsWith("/") ? sv.substring(1) : sv;
+                        int q = found.indexOf('?');
+                        if (q >= 0) found = found.substring(0, q);
+                        break;
+                    }
+                }
+                if (!found.isEmpty()) break;
+            }
+        } catch (Throwable ignored) {
+            // no path, matched by interface name only
+        }
+        paths.put(method, found);
+        return found;
     }
 
     /** Wraps a Retrofit service; the blocked state is checked per call so toggles apply live. */
@@ -79,9 +116,10 @@ final class NetHooks {
                 throw e.getCause() != null ? e.getCause() : e;
             }
             Config c = m.config();
-            if (result == null || c == null || !c.blockedApis.contains(api)) return result;
+            if (result == null || c == null) return result;
             Class<?> callIface = callInterface(method.getReturnType());
             if (callIface == null) return result;
+            if (!c.blockedApis.contains(api) && !c.pathBlocked(path(method))) return result;
             return Proxy.newProxyInstance(callIface.getClassLoader(), new Class<?>[]{callIface},
                     new DeadCall(callIface, result));
         }
