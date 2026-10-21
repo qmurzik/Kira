@@ -23,10 +23,13 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.qmurzik.yacandy.Features;
 import com.qmurzik.yacandy.Keys;
 
 import java.io.InputStream;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import io.github.libxposed.service.XposedService;
 
@@ -73,7 +76,8 @@ public class MainActivity extends Activity implements Store.Listener {
 
         TextView title = Ui.text(this, "Конфетка 🍬", 30, true, Ui.textColor(this));
         column.addView(title);
-        TextView sub = Ui.text(this, "Кастомизация интерфейса Яндекс Музыки", 15, false, Ui.subColor(this));
+        TextView sub = Ui.text(this, "Чистый интерфейс, плеер, поведение и внешний вид Яндекс Музыки",
+                15, false, Ui.subColor(this));
         column.addView(sub);
 
         status = Ui.text(this, "", 14, false, Color.WHITE);
@@ -84,6 +88,10 @@ public class MainActivity extends Activity implements Store.Listener {
         column.addView(status, slp);
         updateStatus();
 
+        cleanSection();
+        playerSection();
+        behaviourSection();
+        experimentsSection();
         presets();
         colorsSection();
         fontSection();
@@ -104,7 +112,7 @@ public class MainActivity extends Activity implements Store.Listener {
             } catch (Throwable t) {
                 fw = "LSPosed";
             }
-            text = "✓ Модуль активен (" + fw + ")\nИзменения применяются на лету.";
+            text = "✓ Модуль активен (" + fw + ")\nВнешний вид меняется на лету, остальное — после перезапуска Музыки.";
             color = 0xFF2E9E6B;
         } else {
             text = "Модуль не подключён к LSPosed.\nВключите его в LSPosed Manager (область: Яндекс Музыка) "
@@ -133,8 +141,122 @@ public class MainActivity extends Activity implements Store.Listener {
         return card;
     }
 
+    private static final String RESTART = "Вступает в силу после перезапуска Музыки (кнопка внизу).";
+
+    private void cleanSection() {
+        LinearLayout c = card("Чистый интерфейс", "Убирает рекламу сервиса, промо и лишние блоки. " + RESTART);
+        c.addView(Ui.caption(this, "Блоки на главной и страницах артистов"));
+        for (Features.BlockGroup g : Features.BLOCK_GROUPS) {
+            setSwitchRow(c, g.title, g.desc, Keys.HIDE_BLOCKS, g.id);
+        }
+        textArea(c, "Свои блоки",
+                "По строке: имя DTO (PromoBlockDto) или тип блока с сервера. Узнать их поможет журнал ниже.",
+                Keys.HIDE_BLOCKS_CUSTOM);
+        textArea(c, "Скрыть вкладки главной",
+                "По строке: часть названия вкладки, например «Подкасты» или «Детям»", Keys.HIDE_TABS);
+        switchRow(c, "Журнал блоков", "Пишет в лог LSPosed типы блоков и названия вкладок, которые приходят с сервера.",
+                Keys.FEED_LOG, false);
+
+        c.addView(Ui.caption(this, "Промо"));
+        switchRow(c, "Без всплывающих предложений", "Шторки и попапы, которые сервер показывает по триггерам.",
+                Keys.NO_POPUPS, false);
+        switchRow(c, "Без рекламной заставки", "Промо-сплэш при запуске.", Keys.NO_SPLASH, false);
+        switchRow(c, "Без спецшапки главной", "Большая промо-шапка над главной.", Keys.NO_SPECIAL_HEADER, false);
+        switchRow(c, "Без промо в рекомендациях", "Эксперимент «very best recommendations».",
+                Keys.NO_PROMO_RECS, false);
+        switchRow(c, "Без квестов Плюса", null, Keys.NO_PLUS_QUESTS, false);
+        switchRow(c, "Без виджета Плюса", "Ежедневный виджет Плюса.", Keys.NO_PLUS_WIDGET, false);
+        switchRow(c, "Убрать вкладку «Концерты»", null, Keys.NO_CONCERTS_TAB, false);
+        switchRow(c, "Без рекламных уведомлений", "Пуши рассылок. Уведомления плеера и загрузок остаются.",
+                Keys.NO_PROMO_PUSH, false);
+    }
+
+    private void playerSection() {
+        LinearLayout c = card("Плеер", RESTART);
+        c.addView(Ui.caption(this, "Что показывать под плеером"));
+        switchRow(c, "Скрыть похожие треки", null, Keys.PB_SIMILAR, false);
+        switchRow(c, "Скрыть блок об артисте", null, Keys.PB_ARTISTS, false);
+        switchRow(c, "Скрыть концерты артиста", null, Keys.PB_CONCERTS, false);
+        switchRow(c, "Скрыть описание книг и подкастов", null, Keys.PB_NONMUSIC, false);
+        switchRow(c, "Без информеров", "Плашки-подсказки и промо в плеере.", Keys.NO_INFORMERS, false);
+        switchRow(c, "Без «слов в волне»", "Карточки с фразами на экране волны.", Keys.NO_WAVE_WORDS, false);
+
+        c.addView(Ui.caption(this, "Вид"));
+        switchRow(c, "Полноэкранный текст песни", "Ручной полноэкранный режим текста (эксперимент Яндекса).",
+                Keys.LYRICS_FULLSCREEN, false);
+        switchRow(c, "Спокойная волна", "Без тряски, «метаболов», шейдеров и свечения на экране волны. Экономит батарею.",
+                Keys.CALM_WAVE, false);
+        String[] animNames = {"Как в системе", "Без анимаций", "Быстрее ×2", "Быстрее ×1,3", "Обычная", "Медленнее ×1,5"};
+        choiceRow(c, "Скорость анимаций", Keys.ANIM_SCALE, Keys.ANIM_IDS, animNames, Keys.ANIM_SYSTEM, id -> {
+        });
+        switchRow(c, "Не гасить экран", "Пока Яндекс Музыка открыта на экране.", Keys.KEEP_SCREEN_ON, false);
+    }
+
+    private void behaviourSection() {
+        LinearLayout c = card("Поведение", RESTART);
+        switchRow(c, "Отключить телеметрию",
+                "AppMetrica, AppsFlyer, Crashlytics и метрики интерфейса. Статистика прослушиваний остаётся: "
+                        + "от неё зависят история, рекомендации и выплаты артистам.",
+                Keys.NO_TELEMETRY, false);
+        switchRow(c, "Не включать музыку при запуске", "Отключает автозапуск волны при открытии приложения.",
+                Keys.NO_AUTOPLAY, false);
+        switchRow(c, "Без напоминаний об обновлении", null, Keys.NO_UPDATE_PROMPTS, false);
+        switchRow(c, "Без просьб про батарею", "Диалоги про ограничения фоновой работы.", Keys.NO_BATTERY_NAG, false);
+        switchRow(c, "Пропускаемый визард", "Онбординг «выберите артистов» можно закрыть.", Keys.NO_WIZARD, false);
+        switchRow(c, "Настройка «Меньше ИИ»",
+                "Открывает в настройках Музыки переключатель, который реже ставит в рекомендации музыку от ИИ.",
+                Keys.AI_REDUCTION, false);
+        switchRow(c, "Делиться в Telegram и WhatsApp", "Кнопки мессенджеров в меню «Поделиться».",
+                Keys.MESSENGER_SHARE, false);
+    }
+
+    private void experimentsSection() {
+        LinearLayout c = card("Эксперименты Яндекса",
+                "Серверные флаги, которыми Яндекс включает функции у части пользователей. Значения: on, default "
+                        + "(выключено), control и другие. Неизвестное значение приложение считает выключенным. "
+                        + RESTART);
+        switchRow(c, "Записать текущие флаги в лог",
+                "Через 20 секунд после запуска все прочитанные флаги и их серверные значения попадут в лог LSPosed.",
+                Keys.EXP_DUMP, false);
+        textArea(c, "Свои значения", "По строке: имя = значение\nandroidWaveForTwo = on", Keys.EXP_OVERRIDES);
+    }
+
+    /** A switch stored as membership of {@code id} in a comma-separated set under {@code key}. */
+    private void setSwitchRow(LinearLayout parent, String title, String desc, String key, String id) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, Ui.dp(this, 10), 0, Ui.dp(this, 2));
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        texts.addView(Ui.text(this, title, 16, false, Ui.textColor(this)));
+        if (desc != null) texts.addView(Ui.text(this, desc, 12, false, Ui.subColor(this)));
+        row.addView(texts, new LinearLayout.LayoutParams(0, -2, 1f));
+        Switch sw = new Switch(this);
+        sw.setChecked(idSet(key).contains(id));
+        sw.setOnCheckedChangeListener((b, checked) -> {
+            Set<String> ids = idSet(key);
+            if (checked) {
+                ids.add(id);
+            } else {
+                ids.remove(id);
+            }
+            store.putString(key, String.join(",", ids));
+        });
+        row.addView(sw);
+        row.setOnClickListener(v -> sw.toggle());
+        parent.addView(row);
+    }
+
+    private Set<String> idSet(String key) {
+        Set<String> out = new LinkedHashSet<>();
+        for (String s : store.getString(key, "").split(",")) {
+            if (!s.trim().isEmpty()) out.add(s.trim());
+        }
+        return out;
+    }
+
     private void presets() {
-        LinearLayout card = card("Готовые темы", "Одно касание — и всё настроено. Потом можно подкрутить детали.");
+        LinearLayout card = card("Готовые темы", "Внешний вид: одно касание, потом можно подкрутить детали.");
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         for (int i = 0; i < Presets.NAMES.length; i++) {

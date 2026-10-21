@@ -2,11 +2,14 @@ package com.qmurzik.yacandy.hook;
 
 import android.content.SharedPreferences;
 
+import com.qmurzik.yacandy.Features;
 import com.qmurzik.yacandy.Keys;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -49,6 +52,23 @@ final class Config {
     final boolean inspector;
     final boolean liveApply;
 
+    /** Skeleton block DTO simple names and backend block types to drop. */
+    final Set<String> hiddenDtos;
+    final Set<String> hiddenTypes;
+    /** Lower-cased titles of main-screen tabs to drop. */
+    final Set<String> hiddenTabs;
+    final boolean feedLog;
+    /** Full names of Retrofit API interfaces whose calls are failed. */
+    final Set<String> blockedApis;
+    final boolean telemetryOff;
+    final boolean promoPushOff;
+    final boolean keepScreenOn;
+    /** Animator duration scale to force, or NaN to leave the system value. */
+    final float animScale;
+    /** Experiment name -> forced value. */
+    final Map<String, String> expOverrides;
+    final boolean expDump;
+
     Config(SharedPreferences p) {
         colorsOn = p.getBoolean(Keys.COLORS_ON, false);
         accentOn = p.getBoolean(Keys.ACCENT_ON, true);
@@ -80,6 +100,115 @@ final class Config {
         hideTexts = parseLines(p.getString(Keys.HIDE_TEXTS, ""), true);
         inspector = p.getBoolean(Keys.INSPECTOR, false);
         liveApply = p.getBoolean(Keys.LIVE_APPLY, true);
+
+        Set<String> dtos = new HashSet<>();
+        Set<String> groups = parseLines(p.getString(Keys.HIDE_BLOCKS, ""), false);
+        for (Features.BlockGroup g : Features.BLOCK_GROUPS) {
+            if (groups.contains(g.id)) dtos.addAll(Arrays.asList(g.dtos));
+        }
+        Set<String> types = new HashSet<>();
+        for (String s : parseLines(p.getString(Keys.HIDE_BLOCKS_CUSTOM, ""), false)) {
+            if (s.endsWith("Dto")) {
+                dtos.add(s);
+            } else {
+                types.add(s.toLowerCase(Locale.ROOT));
+            }
+        }
+        hiddenDtos = dtos;
+        hiddenTypes = types;
+        hiddenTabs = parseLines(p.getString(Keys.HIDE_TABS, ""), true);
+        feedLog = p.getBoolean(Keys.FEED_LOG, false);
+
+        Set<String> apis = new HashSet<>();
+        block(apis, p, Keys.NO_POPUPS, Features.API_POPUPS);
+        block(apis, p, Keys.NO_SPLASH, Features.API_SPLASH);
+        block(apis, p, Keys.NO_SPECIAL_HEADER, Features.API_SPECIAL_HEADER);
+        block(apis, p, Keys.NO_INFORMERS, Features.API_INFORMERS);
+        block(apis, p, Keys.PB_SIMILAR, Features.API_PB_SIMILAR);
+        block(apis, p, Keys.PB_ARTISTS, Features.API_PB_ARTISTS);
+        block(apis, p, Keys.PB_CONCERTS, Features.API_PB_CONCERTS);
+        block(apis, p, Keys.PB_NONMUSIC, Features.API_PB_NONMUSIC);
+        block(apis, p, Keys.NO_WAVE_WORDS, Features.API_WAVE_WORDS);
+        blockedApis = apis;
+
+        telemetryOff = p.getBoolean(Keys.NO_TELEMETRY, false);
+        promoPushOff = p.getBoolean(Keys.NO_PROMO_PUSH, false);
+        keepScreenOn = p.getBoolean(Keys.KEEP_SCREEN_ON, false);
+        String anim = p.getString(Keys.ANIM_SCALE, Keys.ANIM_SYSTEM);
+        float scale = Float.NaN;
+        try {
+            if (!Keys.ANIM_SYSTEM.equals(anim)) scale = Float.parseFloat(anim);
+        } catch (NumberFormatException ignored) {
+            // keep system value
+        }
+        animScale = scale;
+
+        // Yandex's own feature flags. "default" is the "off" value of their boolean experiments.
+        Map<String, String> exp = new LinkedHashMap<>();
+        if (p.getBoolean(Keys.NO_SPLASH, false)) exp.put("androidSplashScreen", OFF);
+        if (p.getBoolean(Keys.NO_PROMO_RECS, false)) exp.put("androidPromoVeryBestRecommendations", OFF);
+        if (p.getBoolean(Keys.NO_CONCERTS_TAB, false)) exp.put("AndroidConcertsTab", OFF);
+        if (p.getBoolean(Keys.NO_PLUS_QUESTS, false)) exp.put("androidPlusQuests", OFF);
+        if (p.getBoolean(Keys.NO_PLUS_WIDGET, false)) exp.put("androidPlusDailyWidget", OFF);
+        if (p.getBoolean(Keys.LYRICS_FULLSCREEN, false)) {
+            exp.put("androidManualFullscreenLyricsModeExperiment", ON);
+            exp.put("androidLyricsDisableExperiment", OFF);
+        }
+        if (p.getBoolean(Keys.CALM_WAVE, false)) {
+            for (String n : new String[]{"androidWaveShake", "androidWaveMetaballPlayer",
+                    "androidWaveScreenVolumeBackground", "androidShaderWaveAgent", "androidQ2vGlow"}) {
+                exp.put(n, OFF);
+            }
+        }
+        if (telemetryOff) {
+            for (String n : new String[]{"androidScrollFrameTracking", "androidImageMetricsConfig",
+                    "androidPlayerDebugLogEvents", "androidReportDownloadsAnalytics",
+                    "androidNetworkMetricsExperiment_Dev"}) {
+                exp.put(n, OFF);
+            }
+        }
+        // The autoplay launcher treats default/off/control as disabled.
+        if (p.getBoolean(Keys.NO_AUTOPLAY, false)) exp.put("androidAutoplay", OFF);
+        if (p.getBoolean(Keys.NO_UPDATE_PROMPTS, false)) exp.put("androidInAppUpdates", OFF);
+        if (p.getBoolean(Keys.NO_BATTERY_NAG, false)) {
+            exp.put("androidBatteryRestrictionBottomSheet", OFF);
+            exp.put("androidShowBatteryPermissionsDialog", OFF);
+        }
+        if (p.getBoolean(Keys.NO_WIZARD, false)) exp.put("AndroidUnskippableWizard", OFF);
+        if (p.getBoolean(Keys.AI_REDUCTION, false)) exp.put("AndroidAIContentReductionSetting", ON);
+        if (p.getBoolean(Keys.MESSENGER_SHARE, false)) exp.put("androidTelegramWhatsappSharing", ON);
+        exp.putAll(parseOverrides(p.getString(Keys.EXP_OVERRIDES, "")));
+        expOverrides = exp;
+        expDump = p.getBoolean(Keys.EXP_DUMP, false);
+    }
+
+    static final String ON = "on";
+    static final String OFF = "default";
+
+    boolean feedOn() {
+        return !hiddenDtos.isEmpty() || !hiddenTypes.isEmpty() || !hiddenTabs.isEmpty() || feedLog;
+    }
+
+    boolean experimentsOn() {
+        return !expOverrides.isEmpty() || expDump;
+    }
+
+    private static void block(Set<String> out, SharedPreferences p, String key, String[] apis) {
+        if (p.getBoolean(key, false)) out.addAll(Arrays.asList(apis));
+    }
+
+    /** Lines like {@code androidWaveShake = on}. */
+    static Map<String, String> parseOverrides(String s) {
+        if (s == null || s.trim().isEmpty()) return Collections.emptyMap();
+        Map<String, String> out = new LinkedHashMap<>();
+        for (String line : s.split("\\n")) {
+            String t = line.trim();
+            if (t.isEmpty() || t.startsWith("#") || t.startsWith("//")) continue;
+            String[] parts = t.split("\\s*[=:]\\s*", 2);
+            if (parts.length != 2 || parts[0].isEmpty() || parts[1].isEmpty()) continue;
+            out.put(parts[0], parts[1]);
+        }
+        return out;
     }
 
     boolean fontOn() {

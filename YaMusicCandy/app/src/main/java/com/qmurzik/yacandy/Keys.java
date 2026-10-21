@@ -49,6 +49,47 @@ public final class Keys {
     // Behaviour
     public static final String LIVE_APPLY = "live_apply";
 
+    // Clean interface: main-screen blocks (by group id, see FeedBlocks), tabs, promo endpoints
+    public static final String HIDE_BLOCKS = "hide_blocks";
+    public static final String HIDE_BLOCKS_CUSTOM = "hide_blocks_custom";
+    public static final String HIDE_TABS = "hide_tabs";
+    public static final String NO_POPUPS = "no_popups";
+    public static final String NO_SPLASH = "no_splash";
+    public static final String NO_SPECIAL_HEADER = "no_special_header";
+    public static final String NO_PROMO_RECS = "no_promo_recs";
+    public static final String NO_CONCERTS_TAB = "no_concerts_tab";
+    public static final String NO_PLUS_QUESTS = "no_plus_quests";
+    public static final String NO_PLUS_WIDGET = "no_plus_widget";
+    public static final String NO_PROMO_PUSH = "no_promo_push";
+    public static final String FEED_LOG = "feed_log";
+
+    // Player
+    public static final String NO_INFORMERS = "no_informers";
+    public static final String PB_SIMILAR = "pb_similar";
+    public static final String PB_ARTISTS = "pb_artists";
+    public static final String PB_CONCERTS = "pb_concerts";
+    public static final String PB_NONMUSIC = "pb_nonmusic";
+    public static final String NO_WAVE_WORDS = "no_wave_words";
+    public static final String LYRICS_FULLSCREEN = "lyrics_fullscreen";
+    public static final String CALM_WAVE = "calm_wave";
+    public static final String ANIM_SCALE = "anim_scale";
+    public static final String KEEP_SCREEN_ON = "keep_screen_on";
+
+    // App behaviour
+    public static final String NO_TELEMETRY = "no_telemetry";
+    public static final String NO_AUTOPLAY = "no_autoplay";
+    public static final String NO_UPDATE_PROMPTS = "no_update_prompts";
+    public static final String NO_BATTERY_NAG = "no_battery_nag";
+    public static final String NO_WIZARD = "no_wizard";
+    public static final String AI_REDUCTION = "ai_reduction";
+    public static final String MESSENGER_SHARE = "messenger_share";
+    public static final String EXP_OVERRIDES = "exp_overrides";
+    public static final String EXP_DUMP = "exp_dump";
+
+    /** Animation speed choices; "system" leaves the device setting alone. */
+    public static final String ANIM_SYSTEM = "system";
+    public static final String[] ANIM_IDS = {ANIM_SYSTEM, "0", "0.5", "0.75", "1", "1.5"};
+
     public static final String FONT_OFF = "off";
     public static final String FONT_CUSTOM = "custom";
     /** Font source ids and the system family each one maps to (index-aligned). */

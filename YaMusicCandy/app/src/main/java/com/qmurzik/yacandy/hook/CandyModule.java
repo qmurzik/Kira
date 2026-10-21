@@ -16,9 +16,9 @@ import io.github.libxposed.api.XposedInterface;
 import io.github.libxposed.api.XposedModule;
 
 /**
- * Module entry (listed in META-INF/xposed/java_init.list). Everything here works on Android
- * framework classes only, so it does not depend on Yandex Music's obfuscated internals and keeps
- * working across app updates.
+ * Module entry (listed in META-INF/xposed/java_init.list). Appearance hooks work on Android
+ * framework classes only; app features hook either names the app keeps (Gson DTOs, Retrofit APIs,
+ * AppMetrica) or code found by string constants ({@link Finder}), so app updates don't break them.
  */
 public class CandyModule extends XposedModule {
     static final String TAG = "YaCandy";
@@ -35,6 +35,10 @@ public class CandyModule extends XposedModule {
     private boolean started;
 
     private boolean colorHooks, fontHooks, scaleHooks, cornerHooks, activityHooks;
+    private boolean feedHooks, apiHooks, telemetryHooks, pushHooks, animHooks;
+    private volatile boolean experimentHooks;
+    private ClassLoader appLoader;
+    private android.content.pm.ApplicationInfo appInfo;
 
     static CandyModule get() {
         return instance;
@@ -48,13 +52,15 @@ public class CandyModule extends XposedModule {
         started = true;
         instance = this;
         main = new Handler(Looper.getMainLooper());
+        appLoader = param.getClassLoader();
+        appInfo = param.getApplicationInfo();
         try {
             prefs = getRemotePreferences(Keys.GROUP);
             cfg = new Config(prefs);
             colors = new ColorEngine(cfg, systemNight());
             prefsListener = (p, key) -> scheduleReload();
             prefs.registerOnSharedPreferenceChangeListener(prefsListener);
-            installHooks();
+            installHooks(true);
             log(Log.INFO, TAG, "Candy loaded into " + param.getPackageName());
         } catch (Throwable t) {
             log(Log.ERROR, TAG, "init failed", t);
@@ -87,9 +93,55 @@ public class CandyModule extends XposedModule {
         }
     }
 
-    // Hooks are installed lazily per feature, so a disabled feature costs nothing.
-    private void installHooks() {
+    /** For hookers that throw on purpose (e.g. failing a DNS lookup). */
+    void hookPassthrough(Executable target, XposedInterface.Hooker hooker) {
+        try {
+            hook(target).setExceptionMode(XposedInterface.ExceptionMode.PASSTHROUGH).intercept(hooker);
+        } catch (Throwable t) {
+            logE("hook failed: " + target, t);
+        }
+    }
+
+    // Hooks are installed lazily per feature, so a disabled feature costs nothing. Most app-feature
+    // hooks only see objects created after them, which is why those settings ask for a restart.
+    private void installHooks(boolean atStart) {
         Config c = cfg;
+        if (c.feedOn() && !feedHooks) {
+            feedHooks = true;
+            FeedHooks.install(this, appLoader);
+        }
+        if (!c.blockedApis.isEmpty() && !apiHooks) {
+            apiHooks = true;
+            NetHooks.installApiBlocker(this);
+        }
+        if (c.telemetryOff && !telemetryHooks) {
+            telemetryHooks = true;
+            TelemetryHooks.install(this, appLoader);
+            NetHooks.installTrackerBlocker(this);
+        }
+        if (c.promoPushOff && !pushHooks) {
+            pushHooks = true;
+            SystemHooks.installPushFilter(this);
+        }
+        if (!Float.isNaN(c.animScale) && !animHooks) {
+            animHooks = true;
+            SystemHooks.installAnimationScale(this);
+        }
+        if (c.experimentsOn() && !experimentHooks) {
+            experimentHooks = true;
+            Thread scan = new Thread(() -> ExperimentHooks.install(this, Finder.load(this, appInfo, appLoader)),
+                    "YaCandy-scan");
+            scan.start();
+            if (atStart) {
+                // Experiments are read during start-up, so give the hooks a head start. Only the first
+                // launch after an app update scans the dex; later launches read the cache instantly.
+                try {
+                    scan.join(4000);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
         if (!activityHooks) {
             activityHooks = true;
             ActivityHooks.install(this);
@@ -129,7 +181,7 @@ public class CandyModule extends XposedModule {
                     || !old.fontSource.equals(c.fontSource) || old.fontWeightDelta != c.fontWeightDelta) {
                 Fonts.reset();
             }
-            installHooks();
+            installHooks(false);
             Activity a = resumed.get();
             if (c.liveApply && a != null && !a.isFinishing()) {
                 // Compose caches its drawing, recreating is the reliable way to repaint everything.
@@ -151,6 +203,8 @@ public class CandyModule extends XposedModule {
             activity.getWindow().getDecorView().invalidate();
         }
         ViewTweaks.onResume(this, activity);
+        Config c = cfg;
+        if (c != null) SystemHooks.onResume(c, activity);
     }
 
     private static boolean systemNight() {
