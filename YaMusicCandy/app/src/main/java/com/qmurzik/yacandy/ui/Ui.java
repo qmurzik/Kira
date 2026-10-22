@@ -252,6 +252,12 @@ final class Ui {
         box.setOrientation(LinearLayout.VERTICAL);
         int p = dp(a, 20);
         box.setPadding(0, dp(a, 10), 0, dp(a, 18));
+        // Keep the last items above the navigation bar (dialogs are edge to edge on Android 15+).
+        box.setOnApplyWindowInsetsListener((v, insets) -> {
+            @SuppressWarnings("deprecation") int bottom = insets.getSystemWindowInsetBottom();
+            v.setPadding(0, dp(a, 10), 0, dp(a, 18) + bottom);
+            return insets;
+        });
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(cardColor(a));
         float r = dp(a, 28);

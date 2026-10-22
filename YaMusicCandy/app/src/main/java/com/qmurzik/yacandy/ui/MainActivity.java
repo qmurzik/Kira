@@ -7,11 +7,13 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -67,7 +69,17 @@ public class MainActivity extends Activity implements Store.Listener {
         getWindow().setNavigationBarColor(Ui.bgColor(this));
         stage = new FrameLayout(this);
         stage.setBackgroundColor(Ui.bgColor(this));
+        // Android 15+ always draws apps edge to edge. Pages are added later than the first insets
+        // pass, so the stage keeps the latest insets and pads every page itself.
+        stage.setOnApplyWindowInsetsListener((v, insets) -> {
+            barInsets = systemBars(insets);
+            for (View page : pages) applyInsets(page);
+            return insets;
+        });
         setContentView(stage);
+        if (Build.VERSION.SDK_INT >= 33) {
+            backCallback = this::pop;
+        }
         show(home(), false);
         String page = getIntent() != null ? getIntent().getStringExtra(Keys.EXTRA_PAGE) : null;
         if (page != null) open(page);
@@ -96,6 +108,43 @@ public class MainActivity extends Activity implements Store.Listener {
         updateStatus();
     }
 
+    /** Left, top, right, bottom system bar (and cutout) insets. */
+    private int[] barInsets = new int[4];
+    private android.window.OnBackInvokedCallback backCallback;
+    private boolean backRegistered;
+
+    @SuppressWarnings("deprecation")
+    private static int[] systemBars(WindowInsets in) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            android.graphics.Insets i = in.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+            return new int[]{i.left, i.top, i.right, i.bottom};
+        }
+        return new int[]{in.getSystemWindowInsetLeft(), in.getSystemWindowInsetTop(),
+                in.getSystemWindowInsetRight(), in.getSystemWindowInsetBottom()};
+    }
+
+    private void applyInsets(View page) {
+        page.setPadding(barInsets[0], barInsets[1], barInsets[2], barInsets[3]);
+    }
+
+    /**
+     * Predictive back (Android 13+, mandatory with targetSdk 36) no longer calls onBackPressed:
+     * while a sub-page is open a callback takes the gesture, on the home page it is removed so the
+     * system can close the app.
+     */
+    private void updateBackCallback() {
+        if (Build.VERSION.SDK_INT < 33 || backCallback == null) return;
+        boolean need = pages.size() > 1;
+        if (need == backRegistered) return;
+        if (need) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, backCallback);
+        } else {
+            getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
+        }
+        backRegistered = need;
+    }
+
     @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
@@ -111,7 +160,9 @@ public class MainActivity extends Activity implements Store.Listener {
     private void show(View page, boolean animate) {
         View top = pages.peek();
         pages.push(page);
+        applyInsets(page);
         stage.addView(page);
+        updateBackCallback();
         if (!animate || top == null) return;
         page.setTranslationX(getResources().getDisplayMetrics().widthPixels * 0.3f);
         page.setAlpha(0f);
@@ -121,7 +172,9 @@ public class MainActivity extends Activity implements Store.Listener {
     }
 
     private void pop() {
+        if (pages.size() <= 1) return;
         View page = pages.pop();
+        updateBackCallback();
         View under = pages.peek();
         if (under != null) {
             under.setVisibility(View.VISIBLE);
@@ -135,13 +188,13 @@ public class MainActivity extends Activity implements Store.Listener {
     /** Scrollable page column; fits system bars. */
     private LinearLayout pageColumn(ScrollView[] holder) {
         ScrollView scroll = new ScrollView(this);
-        scroll.setFitsSystemWindows(true);
-        scroll.setClipToPadding(false);
+        // Clip to the inset padding so content never scrolls under the status bar.
+        scroll.setClipToPadding(true);
         scroll.setBackgroundColor(Ui.bgColor(this));
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
         int p = Ui.dp(this, 16);
-        col.setPadding(p, Ui.dp(this, 8), p, Ui.dp(this, 40));
+        col.setPadding(p, Ui.dp(this, 12), p, Ui.dp(this, 40));
         scroll.addView(col);
         holder[0] = scroll;
         return col;
@@ -157,7 +210,7 @@ public class MainActivity extends Activity implements Store.Listener {
         back.setGravity(Gravity.CENTER);
         int s = Ui.dp(this, 44);
         back.setBackground(Ui.pressable(this, Ui.rounded(Ui.cardColor(this), s / 2f), s / 2f));
-        back.setOnClickListener(v -> onBackPressed());
+        back.setOnClickListener(v -> pop());
         bar.addView(back, new LinearLayout.LayoutParams(s, s));
         col.addView(bar);
         TextView t = Ui.text(this, title, 30, true, Ui.textColor(this));
