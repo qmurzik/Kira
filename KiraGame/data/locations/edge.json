@@ -1,0 +1,8 @@
+{
+  "name": "По ту сторону экрана",
+  "music": {"default": "edge"},
+  "amb": "",
+  "kira": {"x": 960, "y": 1260, "scale": 0.6},
+  "kira_depth": 0.1,
+  "hotspots": []
+}

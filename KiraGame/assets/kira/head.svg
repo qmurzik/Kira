@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="340" viewBox="340 200 320 340"><defs>
+    <radialGradient id="cheek" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f6a3b5" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#f6a3b5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="faceg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7ddd5"/>
+      <stop offset="0.35" stop-color="#fdebe3"/>
+      <stop offset="1" stop-color="#fcefe9"/>
+    </linearGradient></defs>
+    <!-- уши -->
+    <path d="M378 352 C362 344 356 372 364 394 C370 410 382 414 388 404 Z" fill="#f0c8c0" stroke="#c98a84" stroke-width="2"/>
+    <path d="M622 352 C638 344 644 372 636 394 C630 410 618 414 612 404 Z" fill="#f0c8c0" stroke="#c98a84" stroke-width="2"/>
+    <!-- лицо -->
+    <path d="M374 300 C370 352 376 404 398 436 C418 464 458 486 500 490 C542 486 582 464 602 436 C624 404 630 352 626 300 C606 214 394 214 374 300 Z"
+          fill="url(#faceg)" stroke="#c98a84" stroke-width="2.4"/>
+    <!-- тень от чёлки -->
+    <path d="M378 318 C420 345 460 330 500 348 C540 330 580 345 622 318 L624 296 L376 296 Z" fill="#f0c8c0" opacity="0.55"/>
+    <!-- румянец по умолчанию -->
+    <ellipse cx="420" cy="420" rx="34" ry="16" fill="url(#cheek)"/>
+    <ellipse cx="580" cy="420" rx="34" ry="16" fill="url(#cheek)"/>
+    <!-- нос -->
+    <path d="M503 412 C506 420 504 426 497 428" fill="none" stroke="#c98a84" stroke-width="2.2" stroke-linecap="round"/>
+    <ellipse cx="503" cy="416" rx="3" ry="2" fill="#ffffff" opacity="0.8"/>
+    </svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="108" viewBox="380 318 240 108"><defs>
+    <linearGradient id="iris" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c1260"/>
+      <stop offset="0.45" stop-color="#7446c9"/>
+      <stop offset="1" stop-color="#cdb0ff"/>
+    </linearGradient>
+    <clipPath id="ewL"><path d="M402 384 C408 360 430 350 452 350 C470 350 484 356 491 368 C490 392 474 410 450 411 C424 411 406 401 402 384 Z"/></clipPath>
+    </defs><g><path d="M402 384 C420 400 466 402 490 380" fill="none" stroke="#120f1d" stroke-width="6" stroke-linecap="round"/><path d="M402 384 L388 380" stroke="#120f1d" stroke-width="4" stroke-linecap="round"/><path d="M416 395 L410 405 M432 399 L429 409" stroke="#120f1d" stroke-width="2.5" stroke-linecap="round"/></g><g transform="matrix(-1 0 0 1 1000 0)"><path d="M402 384 C420 400 466 402 490 380" fill="none" stroke="#120f1d" stroke-width="6" stroke-linecap="round"/><path d="M402 384 L388 380" stroke="#120f1d" stroke-width="4" stroke-linecap="round"/><path d="M416 395 L410 405 M432 399 L429 409" stroke="#120f1d" stroke-width="2.5" stroke-linecap="round"/></g></svg>

@@ -1,0 +1,38 @@
+{
+  "chapters": {
+    "1": {"steps": [
+      {"id": "intro", "start": "ch1_intro"},
+      {"id": "look", "objective": "Осмотри комнату Киры — нажимай на предметы ({c:ch1_looked}/4)", "until": "count('ch1_looked') >= 4", "end": "ch1_after_look", "activities": ["talk"]},
+      {"id": "cook", "objective": "Приготовьте ужин вместе: «Занятия» → «Готовить вместе»", "until": "count('did_cooking') >= 1", "end": "ch1_after_cook", "activities": ["cooking", "talk"]},
+      {"id": "stars", "objective": "Посмотрите на звёзды: «Занятия» → «Смотреть на звёзды»", "until": "count('did_stars') >= 1", "end": "ch1_after_stars", "activities": ["stars", "talk"]},
+      {"id": "finale", "start": "ch1_finale"}
+    ]},
+    "2": {"steps": [
+      {"id": "morning", "start": "ch2_morning"},
+      {"id": "decor", "objective": "Украсьте комнату вместе: «Занятия» → «Украшать комнату»", "until": "count('did_decorate') >= 1", "end": "ch2_after_decor", "activities": ["decorate", "cooking", "talk"]},
+      {"id": "city", "objective": "Найдите в городе осколки воспоминаний ({c:city_frags}/3)", "until": "count('city_frags') >= 3", "end": "ch2_city_puzzle",
+        "on": {"city.puddle": "ch2_frag_puddle", "city.phone": "ch2_frag_phone", "city.posters": "ch2_frag_posters"}},
+      {"id": "end", "start": "ch2_end"}
+    ]},
+    "3": {"steps": [
+      {"id": "start", "start": "ch3_start"},
+      {"id": "stars", "objective": "Верните погасшие созвездия — загляните в телескоп", "until": "flag('roof_stars_restored')",
+        "on": {"rooftop.telescope": "ch3_telescope", "rooftop.sky": "ch3_telescope"}},
+      {"id": "bench", "objective": "Посидите с Кирой на скамейке", "until": "flag('ch3_bench_talk')", "on": {"rooftop.bench": "ch3_bench"}},
+      {"id": "stairs", "objective": "Спуститесь по лестнице, на которую указали звёзды", "until": "flag('ch3_to_library')", "on": {"rooftop.stairs": "ch3_stairs"}},
+      {"id": "clues", "objective": "Найдите в библиотеке подсказки к замку архива ({c:lib_clues}/3)", "until": "count('lib_clues') >= 3", "end": "ch3_clues_done",
+        "on": {"library.catalog": "ch3_catalog", "library.book": "ch3_book", "library.books_pile": "ch3_pile", "library.archive": "ch3_archive_early"}},
+      {"id": "archive", "objective": "Откройте дверь архива", "until": "flag('ch3_archive_done')", "on": {"library.archive": "ch3_archive"}},
+      {"id": "end", "start": "ch3_end"}
+    ]},
+    "4": {"steps": [
+      {"id": "start", "start": "ch4_start"},
+      {"id": "passengers", "objective": "Познакомьтесь с пассажирами поезда ({c:train_talks}/3)", "until": "count('train_talks') >= 3", "end": "ch4_conductor",
+        "on": {"train.kite_girl": "ch4_kite", "train.knight": "ch4_knight", "train.robot": "ch4_robot", "train.next_door": "ch4_door_locked"}},
+      {"id": "door", "objective": "Пройдите в последний вагон", "until": "flag('ch4_done')", "on": {"train.next_door": "ch4_last_door", "train.conductor": "ch4_conductor_talk"}}
+    ]},
+    "5": {"steps": [
+      {"id": "edge", "start": "ch5_start"}
+    ]}
+  }
+}

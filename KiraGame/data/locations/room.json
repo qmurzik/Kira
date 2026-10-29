@@ -1,0 +1,22 @@
+{
+  "name": "Комната Киры",
+  "music": {"default": "room", "night": "night"},
+  "amb": "",
+  "kira": {"x": 1000, "y": 1250, "scale": 0.62},
+  "kira_depth": 0.25,
+  "hotspots": [
+    {"id": "window", "name": "Окно", "rect": [380, 95, 420, 400]},
+    {"id": "wardrobe", "name": "Шкаф", "rect": [30, 115, 222, 675], "action": "wardrobe"},
+    {"id": "bed", "name": "Кровать", "rect": [225, 548, 530, 330]},
+    {"id": "record", "name": "Проигрыватель", "rect": [758, 580, 166, 212], "action": "music"},
+    {"id": "poster", "name": "Постер с созвездиями", "rect": [1145, 222, 162, 222], "if": "not flag('door_open')"},
+    {"id": "photos", "name": "Фотографии", "rect": [1152, 590, 190, 100], "if": "not flag('door_open')"},
+    {"id": "door", "name": "Таинственная дверь", "rect": [1120, 190, 210, 600], "if": "flag('door_open')", "action": "door"},
+    {"id": "bookshelf", "name": "Книжная полка", "rect": [1310, 135, 222, 655]},
+    {"id": "computer", "name": "Компьютер", "rect": [1590, 390, 262, 210]},
+    {"id": "lamp", "name": "Настольная лампа", "rect": [1772, 455, 112, 150], "action": "lighting"},
+    {"id": "pendant", "name": "Бумажный фонарик", "rect": [890, 60, 140, 125], "action": "lighting"},
+    {"id": "pouf", "name": "Диванчик-пуф", "rect": [15, 862, 455, 218]},
+    {"id": "plant", "name": "Монстера", "rect": [1770, 640, 150, 440]}
+  ]
+}

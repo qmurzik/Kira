@@ -1,0 +1,21 @@
+{
+  "topics": [
+    {"id": "talk_name", "if": "loc == 'room'", "repeat": false},
+    {"id": "talk_cocoa", "if": "count('did_cooking') >= 1"},
+    {"id": "talk_dreams", "if": "chapter >= 1"},
+    {"id": "talk_rain", "if": "chapter >= 2 or free"},
+    {"id": "talk_when_away", "if": "chapter >= 2 or free"},
+    {"id": "talk_jealous", "if": "chapter >= 2 or free"},
+    {"id": "talk_books_fav", "if": "flag('fav_genre')"},
+    {"id": "talk_stars_names", "if": "count('did_stars') >= 1"},
+    {"id": "talk_drawing", "if": "mem('childs_drawing')"},
+    {"id": "talk_seasons", "if": "chapter >= 3 or free"},
+    {"id": "talk_hair", "if": "chapter >= 2 or free"},
+    {"id": "talk_conductor", "if": "flag('conductor_here')"},
+    {"id": "talk_thanks", "if": "chapter >= 4 or free", "repeat": false},
+    {"id": "talk_tired", "if": "day >= 3"},
+    {"id": "talk_ending_our_world", "if": "ending == 'our_world'"},
+    {"id": "talk_ending_new_dawn", "if": "ending == 'new_dawn'"},
+    {"id": "talk_ending_constellation", "if": "ending == 'constellation'"}
+  ]
+}

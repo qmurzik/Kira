@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://kiragameworld01"]
+
+[ext_resource type="Script" path="res://scripts/game/game_world.gd" id="1"]
+
+[node name="Game" type="Node"]
+script = ExtResource("1")

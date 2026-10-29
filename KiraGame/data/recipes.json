@@ -1,0 +1,185 @@
+{
+ "recipes": {
+  "pancakes": {
+   "name": "Блинчики с черникой",
+   "desc": "Классика уютных вечеров. Главное — вовремя перевернуть.",
+   "steps": [
+    {
+     "type": "pick",
+     "text": "Возьми то, что нужно для теста",
+     "need": [
+      "flour",
+      "milk",
+      "egg"
+     ],
+     "pool": [
+      "flour",
+      "milk",
+      "egg",
+      "salt_bag",
+      "pepper",
+      "pickle"
+     ]
+    },
+    {
+     "type": "stir",
+     "text": "Размешай тесто круговыми движениями мыши",
+     "amount": 6.0
+    },
+    {
+     "type": "heat",
+     "text": "Разогрей сковороду: удерживай кнопку и отпусти в зелёной зоне",
+     "zone": [
+      0.62,
+      0.8
+     ]
+    },
+    {
+     "type": "timing",
+     "text": "Переверни блинчик, когда метка в зелёной зоне",
+     "zone": [
+      0.42,
+      0.58
+     ],
+     "speed": 1.1
+    },
+    {
+     "type": "pick",
+     "text": "Чем украсим?",
+     "need": [
+      "berries"
+     ],
+     "pool": [
+      "berries",
+      "ketchup",
+      "fish",
+      "honey_jar"
+     ]
+    }
+   ]
+  },
+  "cocoa": {
+   "name": "Какао с маршмеллоу",
+   "desc": "Самый простой способ пережить дождливый вечер.",
+   "steps": [
+    {
+     "type": "pick",
+     "text": "Что нужно для какао?",
+     "need": [
+      "milk",
+      "cocoa_powder",
+      "sugar"
+     ],
+     "pool": [
+      "milk",
+      "cocoa_powder",
+      "sugar",
+      "pepper",
+      "flour",
+      "pickle"
+     ]
+    },
+    {
+     "type": "heat",
+     "text": "Подогрей молоко, но не дай ему убежать",
+     "zone": [
+      0.5,
+      0.68
+     ]
+    },
+    {
+     "type": "stir",
+     "text": "Размешай, чтобы не было комочков",
+     "amount": 4.5
+    },
+    {
+     "type": "pour",
+     "text": "Налей в кружки до линии",
+     "zone": [
+      0.72,
+      0.84
+     ]
+    },
+    {
+     "type": "pick",
+     "text": "Финальный штрих!",
+     "need": [
+      "marshmallow"
+     ],
+     "pool": [
+      "marshmallow",
+      "salt_bag",
+      "fish",
+      "ketchup"
+     ]
+    }
+   ]
+  },
+  "onigiri": {
+   "name": "Онигири со звёздочкой",
+   "desc": "Рисовые треугольники, которые Кира почему-то называет «звёздными».",
+   "steps": [
+    {
+     "type": "pick",
+     "text": "Возьми ингредиенты",
+     "need": [
+      "rice",
+      "nori",
+      "salt_bag"
+     ],
+     "pool": [
+      "rice",
+      "nori",
+      "salt_bag",
+      "cocoa_powder",
+      "marshmallow",
+      "berries"
+     ]
+    },
+    {
+     "type": "timing",
+     "text": "Слепи треугольник: нажми, когда метка в центре",
+     "zone": [
+      0.45,
+      0.55
+     ],
+     "speed": 1.4
+    },
+    {
+     "type": "timing",
+     "text": "Ещё раз — аккуратнее!",
+     "zone": [
+      0.44,
+      0.56
+     ],
+     "speed": 1.7
+    },
+    {
+     "type": "pour",
+     "text": "Посыпь кунжутом — до линии, не больше",
+     "zone": [
+      0.55,
+      0.7
+     ]
+    }
+   ]
+  }
+ },
+ "ingredients": {
+  "flour": "Мука",
+  "milk": "Молоко",
+  "egg": "Яйцо",
+  "salt_bag": "Соль",
+  "pepper": "Перец",
+  "pickle": "Огурчик",
+  "berries": "Черника",
+  "ketchup": "Кетчуп",
+  "fish": "Рыбка",
+  "honey_jar": "Мёд",
+  "cocoa_powder": "Какао",
+  "sugar": "Сахар",
+  "marshmallow": "Маршмеллоу",
+  "rice": "Рис",
+  "nori": "Нори"
+ }
+}

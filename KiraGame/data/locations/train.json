@@ -1,0 +1,18 @@
+{
+  "name": "Поезд между мирами",
+  "music": {"default": "train"},
+  "amb": "train",
+  "kira": {"x": 960, "y": 1040, "scale": 0.42},
+  "kira_depth": 0.1,
+  "walk": true,
+  "hotspots": [
+    {"id": "luggage", "name": "Багажная полка", "rect": [180, 55, 1600, 75]},
+    {"id": "window", "name": "Окно", "rect": [620, 180, 360, 160]},
+    {"id": "kite_girl", "name": "Девочка со змеем", "rect": [170, 360, 260, 420], "if": "not flag('kite_done')"},
+    {"id": "knight", "name": "Рыцарь", "rect": [640, 340, 240, 420]},
+    {"id": "robot", "name": "Робот-почтальон", "rect": [1110, 360, 240, 420]},
+    {"id": "table", "name": "Столик", "rect": [890, 630, 180, 150]},
+    {"id": "conductor", "name": "Проводник", "rect": [1500, 120, 300, 900], "if": "flag('conductor_here')"},
+    {"id": "next_door", "name": "Дверь в последний вагон", "rect": [1850, 190, 70, 580]}
+  ]
+}
