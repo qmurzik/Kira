@@ -320,6 +320,19 @@ final class AppModel: ObservableObject {
     }
 
     private func openFile(_ item: FileItem, in pane: PaneModel) {
+        // Файл iCloud Drive, ещё не загруженный на устройство (".имя.icloud").
+        if pane.source.isLocal, item.name.hasPrefix("."), item.name.hasSuffix(".icloud") {
+            let realName = String(item.name.dropFirst().dropLast(".icloud".count))
+            let realURL = URL(fileURLWithPath: PathUtils.child(PathUtils.parent(item.path), realName))
+            do {
+                try FileManager.default.startDownloadingUbiquitousItem(at: realURL)
+                show("Загрузка «\(realName)» из iCloud…", style: .info)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { pane.refresh() }
+            } catch {
+                showError(error)
+            }
+            return
+        }
         let ext = item.fileExtension
         if FileIcon.isArchive(ext) {
             archiveToOpen = ArchiveRequest(item: item, paneID: pane.id)

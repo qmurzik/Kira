@@ -23,7 +23,8 @@ final class EditorDocument: ObservableObject, Identifiable {
     @Published var language: SyntaxLanguage
     @Published var isLoading = true
     @Published var loadError: String?
-    @Published var isDirty = false
+    @Published var isDirty = false { didSet { if oldValue != isDirty { onDirtyChange?() } } }
+    var onDirtyChange: (() -> Void)?
     @Published var saveState: SaveState = .idle
     @Published var encoding: TextEncodingKind = .utf8
     @Published var lineEnding: LineEnding = .lf
@@ -119,6 +120,7 @@ final class EditorManager: ObservableObject {
             return
         }
         let doc = EditorDocument(origin: .local(path: path), name: PathUtils.lastComponent(path))
+        doc.onDirtyChange = { [weak self] in self?.objectWillChange.send() }
         documents.append(doc)
         activeID = doc.id
         Task {
@@ -144,6 +146,7 @@ final class EditorManager: ObservableObject {
         }
         let doc = EditorDocument(origin: origin, name: item.name)
         doc.remoteMode = item.unixMode
+        doc.onDirtyChange = { [weak self] in self?.objectWillChange.send() }
         documents.append(doc)
         activeID = doc.id
         if let size = item.size, size > TextDocumentCodec.maxEditableSize {
@@ -172,17 +175,9 @@ final class EditorManager: ObservableObject {
             let pool = try sessions.pool(for: pid)
             let conn = await pool.lease()
             defer { Task { await pool.giveBack(conn) } }
-            let limit = TextDocumentCodec.maxEditableSize
-            let buffer = Locked(Data())
-            try await conn.download(path) { chunk in
-                try buffer.withValue { d in
-                    d.append(chunk)
-                    if Int64(d.count) > limit { throw TextDocumentError.tooLarge(Int64(d.count)) }
-                }
-            }
-            let data = buffer.current
-            doc.remoteBaselineSize = Int64(data.count)
-            doc.remoteBaselineDate = try? await conn.modificationDate(path)
+            let (data, baseline) = try await RemoteTextFile.load(conn, path: path)
+            doc.remoteBaselineSize = baseline.size
+            doc.remoteBaselineDate = baseline.modified
             // Рабочая копия во временном хранилище.
             let copy = Self.cacheDir.appendingPathComponent(pid.uuidString + "-" + String(path.hashValue, radix: 16) + "-" + doc.name)
             try? data.write(to: copy)
@@ -237,40 +232,19 @@ final class EditorManager: ObservableObject {
                 let pool = try sessions.pool(for: pid)
                 let conn = await pool.lease()
                 defer { Task { await pool.giveBack(conn) } }
-                if !force {
-                    let currentSize = try await conn.size(path)
-                    let currentDate = try await conn.modificationDate(path)
-                    let sizeChanged = currentSize != nil && doc.remoteBaselineSize != nil && currentSize != doc.remoteBaselineSize
-                    let dateChanged = currentDate != nil && doc.remoteBaselineDate != nil
-                        && abs(currentDate!.timeIntervalSince(doc.remoteBaselineDate!)) > 1
-                    if sizeChanged || dateChanged {
-                        doc.saveState = .idle
-                        remoteConflict = doc
-                        Haptics.warning()
-                        return
-                    }
+                let baseline = RemoteFileBaseline(size: doc.remoteBaselineSize, modified: doc.remoteBaselineDate)
+                let newBaseline = try await RemoteTextFile.save(conn, path: path, data: data, baseline: baseline,
+                                                                mode: doc.remoteMode, force: force) { message in
+                    Task { @MainActor in doc.saveState = .saving(message) }
                 }
-                doc.saveState = .saving("Загрузка на сервер…")
-                let dir = PathUtils.parent(path)
-                let temp = PathUtils.child(dir, TransferEngine.partName(for: doc.name))
-                var offset = 0
-                try await conn.upload(temp) {
-                    if offset >= data.count { return nil }
-                    let end = min(data.count, offset + 128 * 1024)
-                    defer { offset = end }
-                    return data.subdata(in: offset..<end)
-                }
-                doc.saveState = .saving("Проверка…")
-                if let uploaded = try await conn.size(temp), uploaded != Int64(data.count) {
-                    try? await conn.deleteFile(temp)
-                    throw FTPError.verificationFailed("на сервере \(uploaded) байт вместо \(data.count)")
-                }
-                try await conn.renameReplacing(temporary: temp, target: path)
-                if let mode = doc.remoteMode, mode != 0o644 { try? await conn.chmod(path, mode: mode) }
-                doc.remoteBaselineSize = Int64(data.count)
-                doc.remoteBaselineDate = try? await conn.modificationDate(path)
+                doc.remoteBaselineSize = newBaseline.size
+                doc.remoteBaselineDate = newBaseline.modified
                 doc.markSaved()
                 Haptics.success()
+            } catch FTPError.remoteFileChanged {
+                doc.saveState = .idle
+                remoteConflict = doc
+                Haptics.warning()
             } catch {
                 doc.saveState = .failed("Не сохранено на сервере: \(PaneModel.describe(error)). Изменения остаются в редакторе — повторите сохранение.")
                 Haptics.error()

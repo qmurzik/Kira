@@ -132,6 +132,8 @@ struct TopBar: View {
             .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 4)
 
+            OpenEditorButton(editor: app.editor)
+
             Button {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { settings.swapSides.toggle() }
                 Haptics.tap()
@@ -288,5 +290,27 @@ private struct BottomActionBarContent: View {
                 .shadow(color: .black.opacity(0.06), radius: 6, y: -2)
                 .ignoresSafeArea(edges: .bottom)
         )
+    }
+}
+
+/// Возврат к открытым вкладкам редактора.
+private struct OpenEditorButton: View {
+    @ObservedObject var editor: EditorManager
+    @EnvironmentObject var app: AppModel
+
+    var body: some View {
+        if !editor.documents.isEmpty {
+            Button { app.showEditor = true } label: {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "chevron.left.forwardslash.chevron.right")
+                    if editor.hasUnsaved {
+                        Circle().fill(Color.accentColor).frame(width: 8, height: 8).offset(x: 4, y: -2)
+                    }
+                }
+            }
+            .buttonStyle(ToolbarIconButtonStyle())
+            .accessibilityLabel("Редактор: открыто \(editor.documents.count)\(editor.hasUnsaved ? ", есть несохранённые изменения" : "")")
+            .transition(.scale.combined(with: .opacity))
+        }
     }
 }

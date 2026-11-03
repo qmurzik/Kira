@@ -238,4 +238,42 @@ final class FTPIntegrationTests: XCTestCase {
         let names = try await c.list("/").map(\.name)
         XCTAssertEqual(names, ["site.php"])
     }
+
+    func testRemoteEditPHPWithChangeDetectionAndPermissions() async throws {
+        let server = try TestFTPServer()
+        defer { server.stop() }
+        let original = "<?php\r\n// Главная\r\necho 'Привет';\r\n"
+        let file = server.root.appendingPathComponent("index.php")
+        try Data(original.utf8).write(to: file)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+        let c = server.connection()
+        let (data, baseline) = try await RemoteTextFile.load(c, path: "/index.php")
+        var doc = try TextDocumentCodec.decode(data)
+        XCTAssertEqual(doc.lineEnding, .crlf)
+        doc.text += "echo 'Мир';\n"
+        let encoded = try TextDocumentCodec.encode(doc.text, encoding: doc.encoding, lineEnding: doc.lineEnding)
+        var steps: [String] = []
+        let newBaseline = try await RemoteTextFile.save(c, path: "/index.php", data: encoded, baseline: baseline,
+                                                        mode: 0o600) { steps.append($0) }
+        XCTAssertEqual(steps, ["Проверка сервера…", "Загрузка на сервер…", "Проверка…"])
+        let onServer = try String(contentsOf: file, encoding: .utf8)
+        XCTAssertEqual(onServer, original + "echo 'Мир';\r\n", "переводы строк CRLF сохранены")
+        let attrs = try FileManager.default.attributesOfItem(atPath: file.path)
+        XCTAssertEqual((attrs[.posixPermissions] as? NSNumber)?.intValue, 0o600, "права файла сохранены")
+        XCTAssertFalse(try FileManager.default.contentsOfDirectory(atPath: server.root.path).contains { $0.contains("twinftp-part") })
+
+        // Кто-то изменил файл на сервере — сохранение без force должно отказать.
+        try await Task.sleep(nanoseconds: 1_100_000_000)
+        try Data("<?php echo 'чужая правка'; ?>".utf8).write(to: file)
+        do {
+            try await RemoteTextFile.save(c, path: "/index.php", data: Data("mine".utf8), baseline: newBaseline)
+            XCTFail("ожидалась ошибка remoteFileChanged")
+        } catch let e as FTPError {
+            XCTAssertEqual(e, .remoteFileChanged("index.php"))
+        }
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "<?php echo 'чужая правка'; ?>")
+        // Принудительная перезапись
+        try await RemoteTextFile.save(c, path: "/index.php", data: Data("mine".utf8), baseline: newBaseline, force: true)
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "mine")
+    }
 }
