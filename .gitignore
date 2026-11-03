@@ -4,3 +4,7 @@ node_modules/
 *.log
 dist/
 .DS_Store
+TwinFTP/**/.build/
+TwinFTP/**/xcuserdata/
+TwinFTP/build/
+*.ipa
