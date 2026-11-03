@@ -344,6 +344,59 @@ final class AppModel: ObservableObject {
         showEditor = true
     }
 
+    /// «Скачать архив с FTP и распаковать на iPhone»: скачивание во временную папку + распаковка в текущую папку соседней панели.
+    func downloadAndExtract(_ item: FileItem, from pane: PaneModel) {
+        guard case .remote(let pid) = pane.source, let profile = servers.profile(pid) else { return }
+        let dest = otherPane(of: pane)
+        guard dest.source.isLocal else { return }
+        let base = PathUtils.splitExtension(item.name).base
+        let existing = Set(dest.items.map(\.name))
+        let folder = PathUtils.child(dest.path, PathUtils.uniqueName(for: base, existing: existing))
+        let staging = FileManager.default.temporaryDirectory.appendingPathComponent("twinftp-dl-\(UUID().uuidString)").path
+        try? FileManager.default.createDirectory(atPath: staging, withIntermediateDirectories: true)
+        var job = TransferJob(direction: .download, profileID: pid, serverName: profile.displayName, sources: [item],
+                              sourceDirectory: pane.path, destinationDirectory: staging,
+                              conflictPolicy: .replace, postAction: .extractArchive(destination: folder),
+                              title: "\(item.name) → распаковка")
+        job.conflictPolicy = .replace
+        transfers.enqueue(job)
+        show("Скачивание и распаковка: \(item.name)", style: .info)
+    }
+
+    /// «Распаковать и загрузить на FTP»: локальная распаковка во временную папку и загрузка её содержимого.
+    func extractAndUpload(archive item: FileItem, password: String?, from pane: PaneModel) {
+        let dest = otherPane(of: pane)
+        guard case .remote(let pid) = dest.source, let profile = servers.profile(pid) else {
+            show("В соседней панели должен быть открыт FTP-сервер.", style: .warning)
+            return
+        }
+        let staging = FileManager.default.temporaryDirectory.appendingPathComponent("twinftp-unzip-\(UUID().uuidString)").path
+        let remoteDir = dest.path
+        busyMessage = "Распаковка «\(item.name)»…"
+        Task {
+            do {
+                try await Task.detached {
+                    let reader = try ZipArchiveReader(url: URL(fileURLWithPath: item.path))
+                    _ = try reader.extractAll(to: staging, password: password, policy: .rename)
+                }.value
+                let lfs = LocalFileSystem()
+                let top = try lfs.list(staging)
+                busyMessage = nil
+                guard !top.isEmpty else { show("Архив пуст.", style: .warning); return }
+                let job = TransferJob(direction: .upload, profileID: pid, serverName: profile.displayName, sources: top,
+                                      sourceDirectory: staging, destinationDirectory: remoteDir,
+                                      postAction: .cleanupLocal(path: staging),
+                                      title: "\(item.name) → распаковка на сервер")
+                transfers.enqueue(job)
+                show("Распаковано, загрузка на сервер…", style: .info)
+            } catch {
+                busyMessage = nil
+                try? FileManager.default.removeItem(atPath: staging)
+                showError(error)
+            }
+        }
+    }
+
     // MARK: - Входящие файлы (Открыть в… / Поделиться)
 
     func handleIncoming(url: URL) {
@@ -447,4 +500,5 @@ struct ArchiveRequest: Identifiable {
     let id = UUID()
     let item: FileItem
     let paneID: String
+    var uploadAfterExtract = false
 }

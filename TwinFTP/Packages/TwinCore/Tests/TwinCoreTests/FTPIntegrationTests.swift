@@ -29,6 +29,18 @@ final class FTPIntegrationTests: XCTestCase {
         defer { server.stop() }
         for stack in availableStacks {
             let log = InMemoryFTPLog()
+            do {
+                try await runFullScenario(server: server, stack: stack, log: log)
+            } catch {
+                // Диагностика: печатаем журнал FTP при сбое.
+                for e in log.all { FileHandle.standardError.write(Data("[\(stack)] \(e.kind.rawValue): \(e.text)\n".utf8)) }
+                XCTFail("стек \(stack): \(error)")
+            }
+        }
+    }
+
+    private func runFullScenario(server: TestFTPServer, stack: NetworkStack, log: InMemoryFTPLog) async throws {
+        do {
             let c = server.connection(stack: stack, log: log)
             try await c.connect()
             XCTAssertEqual(c.homeDirectory, "/")

@@ -60,7 +60,10 @@ jobs:
 
       - name: Тесты TwinCore (юнит + интеграционные с реальным FTP)
         working-directory: TwinFTP/Packages/TwinCore
-        run: swift test 2>&1 | tee "$RUNNER_TEMP/core-tests.log"
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee "$RUNNER_TEMP/core-tests.log"
+          grep -E "Executed [0-9]+ tests" "$RUNNER_TEMP/core-tests.log" | tail -1
 
       - name: Сборка приложения (iphoneos, без подписи)
         run: |
