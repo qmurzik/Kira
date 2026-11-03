@@ -7,25 +7,113 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D9393204ECC520A3D9A0ABA = {
+			fileRef = D45B9EAFA89EEBB39FB5D1B7;
+			isa = PBXBuildFile;
+		};
 		26410EEFF687CC70B95E2D45 = {
 			fileRef = 731AF136838CABC17B94F167;
+			isa = PBXBuildFile;
+		};
+		319BE1B6D99D859F012A528D = {
+			fileRef = D7BC552E645A69E57D799E25;
+			isa = PBXBuildFile;
+		};
+		36ADE1277F03995CF33B19B1 = {
+			fileRef = 1F46D36DBE70AFD164ED4620;
+			isa = PBXBuildFile;
+		};
+		3D0D823E5E31B977FDDBAADC = {
+			fileRef = BAE3FD5BB756CCBDDCA9EE32;
 			isa = PBXBuildFile;
 		};
 		42DD6E9F3C2FEFBB3F2D848E = {
 			isa = PBXBuildFile;
 			productRef = 7C91A00002EB10488728953C;
 		};
+		61F16A6811AE1B6C64BDE2C2 = {
+			fileRef = CBA7581169BA04D7E0B19DD1;
+			isa = PBXBuildFile;
+		};
+		66B0DAE05CAB995BBA9EC4F4 = {
+			fileRef = 0EAFEE847A24EC92E0FD5337;
+			isa = PBXBuildFile;
+		};
+		774BEB3A5DFDA05B6D099465 = {
+			fileRef = A97CA4CFD66F8164AA623FEA;
+			isa = PBXBuildFile;
+		};
+		9615C9139BDDAE8CD7C1DA10 = {
+			fileRef = 297464C3FF3BA1CCF0FA4FEB;
+			isa = PBXBuildFile;
+		};
 		9F4D0BFEF27583115994DF13 = {
 			fileRef = B1A60A17FC493AE9AEE44A20;
+			isa = PBXBuildFile;
+		};
+		A735F6E0988B7A05F449CF66 = {
+			fileRef = 3CD6D85CD9BF124A1A87F549;
+			isa = PBXBuildFile;
+		};
+		A919BC467859DCACD7005C1C = {
+			fileRef = 84C132821D5F25E0BAA60CF9;
+			isa = PBXBuildFile;
+		};
+		BC3E20BC4BE640BA0AC94A50 = {
+			fileRef = 47F722D198144CFE2A16BC12;
+			isa = PBXBuildFile;
+		};
+		BDD32FE0FF24BFA2401D2A7B = {
+			fileRef = CD20B5173961214EF30CC241;
+			isa = PBXBuildFile;
+		};
+		F2D16C24AF6C32DC6C609ECA = {
+			fileRef = 6C3450A7986AE7ADAC869425;
 			isa = PBXBuildFile;
 		};
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0EAFEE847A24EC92E0FD5337 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = RemoteSessions.swift;
+			sourceTree = "<group>";
+		};
+		1F46D36DBE70AFD164ED4620 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = LocalRoots.swift;
+			sourceTree = "<group>";
+		};
 		249226734672AF3D3CE95505 = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.xml;
 			path = Info.plist;
+			sourceTree = "<group>";
+		};
+		297464C3FF3BA1CCF0FA4FEB = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = TransferManager.swift;
+			sourceTree = "<group>";
+		};
+		3CD6D85CD9BF124A1A87F549 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = PaneModel.swift;
+			sourceTree = "<group>";
+		};
+		47F722D198144CFE2A16BC12 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = EditorView.swift;
+			sourceTree = "<group>";
+		};
+		6C3450A7986AE7ADAC869425 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = EditorManager.swift;
 			sourceTree = "<group>";
 		};
 		731AF136838CABC17B94F167 = {
@@ -41,10 +129,52 @@
 			path = TwinFTP.app;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		84C132821D5F25E0BAA60CF9 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = AppModel.swift;
+			sourceTree = "<group>";
+		};
+		A97CA4CFD66F8164AA623FEA = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = Theme.swift;
+			sourceTree = "<group>";
+		};
 		B1A60A17FC493AE9AEE44A20 = {
 			isa = PBXFileReference;
 			lastKnownFileType = folder.assetcatalog;
 			path = Assets.xcassets;
+			sourceTree = "<group>";
+		};
+		BAE3FD5BB756CCBDDCA9EE32 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = FileRowView.swift;
+			sourceTree = "<group>";
+		};
+		CBA7581169BA04D7E0B19DD1 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = CodeTextView.swift;
+			sourceTree = "<group>";
+		};
+		CD20B5173961214EF30CC241 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = FileIcons.swift;
+			sourceTree = "<group>";
+		};
+		D45B9EAFA89EEBB39FB5D1B7 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = AppSettings.swift;
+			sourceTree = "<group>";
+		};
+		D7BC552E645A69E57D799E25 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ServerProfile.swift;
 			sourceTree = "<group>";
 		};
 /* End PBXFileReference section */
@@ -63,6 +193,7 @@
 /* Begin PBXGroup section */
 		18C45D68727A11CE0812209C = {
 			children = (
+				297464C3FF3BA1CCF0FA4FEB,
 			);
 			isa = PBXGroup;
 			path = Transfers;
@@ -70,6 +201,7 @@
 		};
 		26B16A2A527CF5C04FB75E61 = {
 			children = (
+				84C132821D5F25E0BAA60CF9,
 				731AF136838CABC17B94F167,
 			);
 			isa = PBXGroup;
@@ -115,6 +247,8 @@
 		};
 		75729E13DDD30E7ED8829C5D = {
 			children = (
+				CD20B5173961214EF30CC241,
+				A97CA4CFD66F8164AA623FEA,
 			);
 			isa = PBXGroup;
 			path = Design;
@@ -122,6 +256,9 @@
 		};
 		7E7B6D4CE1375F6DAB3DB46E = {
 			children = (
+				D45B9EAFA89EEBB39FB5D1B7,
+				1F46D36DBE70AFD164ED4620,
+				D7BC552E645A69E57D799E25,
 			);
 			isa = PBXGroup;
 			path = Models;
@@ -138,6 +275,7 @@
 		};
 		B20919701D9FC54111C56301 = {
 			children = (
+				0EAFEE847A24EC92E0FD5337,
 			);
 			isa = PBXGroup;
 			path = Services;
@@ -173,6 +311,9 @@
 		};
 		E26797BBEFA7939C308A7191 = {
 			children = (
+				CBA7581169BA04D7E0B19DD1,
+				6C3450A7986AE7ADAC869425,
+				47F722D198144CFE2A16BC12,
 			);
 			isa = PBXGroup;
 			path = Editor;
@@ -187,6 +328,8 @@
 		};
 		E3E515A674C57796EDBDD5ED = {
 			children = (
+				BAE3FD5BB756CCBDDCA9EE32,
+				3CD6D85CD9BF124A1A87F549,
 			);
 			isa = PBXGroup;
 			path = Panels;
@@ -268,7 +411,20 @@
 		4821909E9BF9E73E471FEA84 = {
 			buildActionMask = 2147483647;
 			files = (
+				A919BC467859DCACD7005C1C,
 				26410EEFF687CC70B95E2D45,
+				BDD32FE0FF24BFA2401D2A7B,
+				774BEB3A5DFDA05B6D099465,
+				61F16A6811AE1B6C64BDE2C2,
+				F2D16C24AF6C32DC6C609ECA,
+				BC3E20BC4BE640BA0AC94A50,
+				0D9393204ECC520A3D9A0ABA,
+				36ADE1277F03995CF33B19B1,
+				319BE1B6D99D859F012A528D,
+				3D0D823E5E31B977FDDBAADC,
+				A735F6E0988B7A05F449CF66,
+				66B0DAE05CAB995BBA9EC4F4,
+				9615C9139BDDAE8CD7C1DA10,
 			);
 			isa = PBXSourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;

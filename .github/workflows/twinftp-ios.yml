@@ -31,7 +31,7 @@ defaults:
 jobs:
   build:
     name: Тесты ядра, сборка и unsigned IPA
-    runs-on: macos-15
+    runs-on: macos-latest
     timeout-minutes: 60
     steps:
       - name: Checkout
