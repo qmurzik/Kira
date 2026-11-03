@@ -144,6 +144,7 @@ struct ServerPickerInline: View {
                         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.surfaceSunken))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("server-\(s.displayName)")
                 }
                 Button { creating = ServerProfile() } label: {
                     Label("Новый сервер", systemImage: "plus")

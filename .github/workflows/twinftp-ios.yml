@@ -59,6 +59,8 @@ jobs:
           git diff --exit-code -- TwinFTP.xcodeproj || (echo "::warning::TwinFTP.xcodeproj отличается от сгенерированного" )
 
       - name: Тесты TwinCore (юнит + интеграционные с реальным FTP)
+        id: coretests
+        continue-on-error: true
         working-directory: TwinFTP/Packages/TwinCore
         run: |
           set -o pipefail
@@ -97,20 +99,31 @@ jobs:
           shasum -a 256 "$GITHUB_WORKSPACE/out/TwinFTP-unsigned.ipa" | tee "$GITHUB_WORKSPACE/out/SHA256.txt"
           ls -la "$GITHUB_WORKSPACE/out"
 
-      - name: Сборка для симулятора и UI-смоук-тест со снимками экрана
+      - name: UI-тест на симуляторе с реальным FTP-сервером (снимки экрана)
+        id: uitests
         continue-on-error: true
         run: |
           set -o pipefail
-          DEVICE=$(xcrun simctl list devices available | grep -E "iPhone (1[0-9]|XS)" | head -1 | sed -E 's/^ *([^()]+) \(([-0-9A-F]+)\).*/\2/')
+          FTPROOT="$RUNNER_TEMP/ftproot"
+          mkdir -p "$FTPROOT"
+          echo "TwinFTP UI test" > "$FTPROOT/readme.txt"
+          python3 Scripts/test_ftp_server.py --port 2121 --root "$FTPROOT" > "$RUNNER_TEMP/ftpserver.log" 2>&1 &
+          FTP_PID=$!
+          sleep 2
+          xcrun simctl list devices available | grep -E "iPhone" | head -20
+          DEVICE=$(xcrun simctl list devices available | grep -E "^\s+iPhone" | grep -v -i "plus\|max\|pro" | head -1 | sed -E 's/.*\(([-0-9A-F]{36})\).*/\1/')
+          if [ -z "$DEVICE" ]; then DEVICE=$(xcrun simctl list devices available | grep -E "^\s+iPhone" | head -1 | sed -E 's/.*\(([-0-9A-F]{36})\).*/\1/'); fi
           echo "Симулятор: $DEVICE"
-          if [ -d App/TwinFTPUITests ]; then
-            xcodebuild test -project TwinFTP.xcodeproj -scheme TwinFTP -destination "id=$DEVICE" \
-              -derivedDataPath "$RUNNER_TEMP/dd-sim" -resultBundlePath "$RUNNER_TEMP/UITests.xcresult" \
-              CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/uitest.log" | grep -E "error:|Test Case|TEST (SUCCEEDED|FAILED)|\*\* " || true
-            mkdir -p "$GITHUB_WORKSPACE/out/screenshots"
-            xcrun xcresulttool export attachments --path "$RUNNER_TEMP/UITests.xcresult" --output-path "$GITHUB_WORKSPACE/out/screenshots" 2>/dev/null || true
-            ls -la "$GITHUB_WORKSPACE/out/screenshots" || true
-          fi
+          xcodebuild test -project TwinFTP.xcodeproj -scheme TwinFTP -destination "id=$DEVICE" \
+            -derivedDataPath "$RUNNER_TEMP/dd-sim" -resultBundlePath "$RUNNER_TEMP/UITests.xcresult" \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/uitest.log" | grep -E "error:|Test Case|Executed|TEST (SUCCEEDED|FAILED)|\*\* " || true
+          echo "=== Содержимое FTP-сервера после UI-теста ==="
+          ls -laR "$FTPROOT" || true
+          kill $FTP_PID || true
+          mkdir -p "$GITHUB_WORKSPACE/out/screenshots"
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/UITests.xcresult" --output-path "$GITHUB_WORKSPACE/out/screenshots" || true
+          ls -la "$GITHUB_WORKSPACE/out/screenshots" || true
+          grep -q "TEST SUCCEEDED" "$RUNNER_TEMP/uitest.log"
 
       - name: Логи сборки
         if: always()
@@ -137,6 +150,18 @@ jobs:
             out/logs
             out/screenshots
           if-no-files-found: ignore
+
+      - name: Итог тестов
+        if: always()
+        run: |
+          echo "Тесты ядра: ${{ steps.coretests.outcome }}"
+          echo "UI-тест: ${{ steps.uitests.outcome }}"
+          if [ "${{ steps.coretests.outcome }}" != "success" ]; then
+            echo "::error::Тесты TwinCore не прошли — см. шаг тестов"; exit 1
+          fi
+          if [ "${{ steps.uitests.outcome }}" != "success" ]; then
+            echo "::warning::UI-тест на симуляторе не прошёл — см. логи и снимки экрана"
+          fi
 
       - name: GitHub Release
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}

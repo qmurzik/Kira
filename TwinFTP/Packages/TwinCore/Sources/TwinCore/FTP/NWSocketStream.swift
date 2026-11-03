@@ -79,27 +79,47 @@ public final class NWSocketStream: ByteStream, @unchecked Sendable {
         }
     }
 
+    /// Получен конец потока (FIN) — последующие чтения сразу возвращают пустые данные.
+    private var _eof = false
+    private var eof: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return _eof }
+        set { lock.lock(); _eof = newValue; lock.unlock() }
+    }
+
     public func receive(maxLength: Int, timeout: TimeInterval) async throws -> Data {
+        if eof { return Data() }
         if isClosed { throw FTPError.connectionClosed }
-        return try await withTimeout(timeout, operation: "ожидание данных от сервера") { [connection] in
-            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Data, Error>) in
+        let result: (Data, Bool) = try await withTimeout(timeout, operation: "ожидание данных от сервера") { [connection] in
+            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<(Data, Bool), Error>) in
                 connection.receive(minimumIncompleteLength: 1, maximumLength: maxLength) { content, _, isComplete, error in
                     if let content, !content.isEmpty {
-                        cont.resume(returning: content)
+                        // Данные могут прийти вместе с признаком конца потока.
+                        cont.resume(returning: (content, isComplete))
                     } else if isComplete {
-                        cont.resume(returning: Data())
+                        cont.resume(returning: (Data(), true))
                     } else if let error {
-                        if case .posix(let code) = error, code == .ECONNRESET {
-                            cont.resume(throwing: FTPError.connectionClosed)
-                        } else {
-                            cont.resume(throwing: FTPError.dataConnectionFailed(error.localizedDescription))
+                        if case .posix(let code) = error {
+                            switch code {
+                            case .ENODATA:
+                                // Сокет уже закрыт удалённой стороной: это конец потока, а не ошибка.
+                                cont.resume(returning: (Data(), true))
+                                return
+                            case .ECONNRESET:
+                                cont.resume(throwing: FTPError.connectionClosed)
+                                return
+                            default:
+                                break
+                            }
                         }
+                        cont.resume(throwing: FTPError.dataConnectionFailed(error.localizedDescription))
                     } else {
-                        cont.resume(returning: Data())
+                        cont.resume(returning: (Data(), true))
                     }
                 }
             }
         }
+        if result.1 { eof = true }
+        return result.0
     }
 
     /// Выполняет операцию с тайм-аутом; по истечении закрывает соединение (что завершает висящий вызов).

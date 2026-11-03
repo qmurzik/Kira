@@ -49,7 +49,7 @@ final class TransferManager: ObservableObject {
                 Task { @MainActor in self?.apply(job) }
             },
             performPostAction: { job in
-                await Self.performPostAction(job)
+                await TransferManager.performPostAction(job)
             },
             safeUploads: { UserDefaults.standard.object(forKey: "safeUploads") as? Bool ?? true },
             maxRetries: 3)

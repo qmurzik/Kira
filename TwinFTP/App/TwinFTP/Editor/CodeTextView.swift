@@ -218,7 +218,7 @@ final class KeyboardAccessoryBar: UIInputView {
             config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 10, bottom: 4, trailing: 10)
             if let title {
                 var attr = AttributedString(title)
-                attr.font = UIFont.monospacedSystemFont(ofSize: 17, weight: .medium)
+                attr.uiKit.font = UIFont.monospacedSystemFont(ofSize: 17, weight: .medium)
                 config.attributedTitle = attr
             }
             if let symbol {

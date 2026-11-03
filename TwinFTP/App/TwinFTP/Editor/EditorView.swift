@@ -108,6 +108,7 @@ struct EditorView: View {
                 Image(systemName: "chevron.down").font(.system(size: 15, weight: .semibold))
             }
             .accessibilityLabel("Свернуть редактор")
+            .accessibilityIdentifier("editor-close")
         }
         ToolbarItem(placement: .principal) {
             if let doc = manager.active {

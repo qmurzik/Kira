@@ -194,6 +194,7 @@ struct PaneView: View {
                     textSize: settings.textSize,
                     showDetails: settings.showDetails,
                     wide: wide)
+            .accessibilityIdentifier("row-\(pane.source.isRemote ? "remote" : pane.id)-\(item.name)")
             .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
             .listRowBackground(pane.selection.contains(item.path) ? Color.accentColor.opacity(0.13) : Color.clear)
             .listRowSeparatorTint(Theme.separator)

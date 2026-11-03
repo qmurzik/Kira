@@ -118,6 +118,7 @@ struct TopBar: View {
             }
             .buttonStyle(ToolbarIconButtonStyle())
             .accessibilityLabel("Серверы")
+            .accessibilityIdentifier("servers-button")
 
             Spacer(minLength: 4)
             HStack(spacing: 6) {
@@ -162,12 +163,14 @@ struct TopBar: View {
             }
             .buttonStyle(ToolbarIconButtonStyle())
             .accessibilityLabel(transfers.hasActive ? "Очередь передач, выполняется \(transfers.activeCount)" : "Очередь передач")
+            .accessibilityIdentifier("queue-button")
 
             Button { app.showSettings = true } label: {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(ToolbarIconButtonStyle())
             .accessibilityLabel("Настройки")
+            .accessibilityIdentifier("settings-button")
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 2)
@@ -218,6 +221,7 @@ private struct BottomActionBarContent: View {
             }
             .buttonStyle(ToolbarIconButtonStyle())
             .accessibilityLabel(pane.selectionMode ? "Завершить выбор" : "Выбрать файлы")
+            .accessibilityIdentifier("select-button")
             .disabled(pane.source == .serverPicker)
 
             Button { dialog = .newFolder(pane.id) } label: { Image(systemName: "folder.badge.plus") }
@@ -241,6 +245,7 @@ private struct BottomActionBarContent: View {
             .buttonStyle(ToolbarIconButtonStyle(prominent: true))
             .disabled(count == 0 || other.source == .serverPicker && !pane.source.isLocal)
             .accessibilityLabel("\(transferTitle) выбранное (\(count)) в соседнюю панель")
+            .accessibilityIdentifier("transfer-button")
 
             Spacer(minLength: 2)
 
