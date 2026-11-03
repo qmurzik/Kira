@@ -316,7 +316,7 @@ public actor TransferEngine {
                                           isSymlink: source.kind == .symlink))
             }
         }
-        await setNote(job.id, nil)
+        setNote(job.id, nil)
         return (tasks, dirs, sourceDirs)
     }
 

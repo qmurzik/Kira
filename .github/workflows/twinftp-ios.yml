@@ -111,7 +111,12 @@ jobs:
           FTP_PID=$!
           sleep 2
           xcrun simctl list devices available | grep -E "iPhone" | head -20
-          DEVICE=$(xcrun simctl list devices available | grep -E "^\s+iPhone" | grep -v -i "plus\|max\|pro" | head -1 | sed -E 's/.*\(([-0-9A-F]{36})\).*/\1/')
+          # Ближе всего к iPhone XS по ширине (375 pt) — iPhone SE 3; затем 16e/17/любой iPhone.
+          DEVICE=""
+          for NAME in "iPhone SE (3rd generation)" "iPhone 16e" "iPhone 17" "iPhone 16"; do
+            DEVICE=$(xcrun simctl list devices available | grep -F "    $NAME (" | head -1 | sed -E 's/.*\(([-0-9A-F]{36})\).*/\1/')
+            if [ -n "$DEVICE" ]; then echo "Выбран: $NAME"; break; fi
+          done
           if [ -z "$DEVICE" ]; then DEVICE=$(xcrun simctl list devices available | grep -E "^\s+iPhone" | head -1 | sed -E 's/.*\(([-0-9A-F]{36})\).*/\1/'); fi
           echo "Симулятор: $DEVICE"
           xcodebuild test -project TwinFTP.xcodeproj -scheme TwinFTP -destination "id=$DEVICE" \
