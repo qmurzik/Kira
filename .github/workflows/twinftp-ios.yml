@@ -119,9 +119,21 @@ jobs:
           done
           if [ -z "$DEVICE" ]; then DEVICE=$(xcrun simctl list devices available | grep -E "^\s+iPhone" | head -1 | sed -E 's/.*\(([-0-9A-F]{36})\).*/\1/' || true); fi
           echo "Симулятор: $DEVICE"
-          xcodebuild test -project TwinFTP.xcodeproj -scheme TwinFTP -destination "id=$DEVICE" \
-            -derivedDataPath "$RUNNER_TEMP/dd-sim" -resultBundlePath "$RUNNER_TEMP/UITests.xcresult" \
-            CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/uitest.log" | grep -E "error:|Test Case|Executed|TEST (SUCCEEDED|FAILED)|\*\* " || true
+          # Заранее загружаем симулятор: снижает риск «Timed out waiting for AX loaded notification».
+          xcrun simctl boot "$DEVICE" || true
+          xcrun simctl bootstatus "$DEVICE" -b || true
+          for ATTEMPT in 1 2; do
+            rm -rf "$RUNNER_TEMP/UITests.xcresult"
+            xcodebuild test -project TwinFTP.xcodeproj -scheme TwinFTP -destination "id=$DEVICE" \
+              -derivedDataPath "$RUNNER_TEMP/dd-sim" -resultBundlePath "$RUNNER_TEMP/UITests.xcresult" \
+              CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/uitest.log" | grep -E "error:|Test Case|Executed|TEST (SUCCEEDED|FAILED)|\*\* " || true
+            if grep -q "TEST SUCCEEDED" "$RUNNER_TEMP/uitest.log"; then break; fi
+            if ! grep -q "failed to initialize for UI testing" "$RUNNER_TEMP/uitest.log"; then break; fi
+            echo "::warning::Тест-раннер симулятора не запустился — повтор (попытка $ATTEMPT)"
+            xcrun simctl shutdown "$DEVICE" || true
+            xcrun simctl boot "$DEVICE" || true
+            xcrun simctl bootstatus "$DEVICE" -b || true
+          done
           echo "=== Содержимое FTP-сервера после UI-теста ==="
           ls -laR "$FTPROOT" || true
           kill $FTP_PID || true
