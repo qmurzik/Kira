@@ -435,6 +435,16 @@ public final class FTPConnection: @unchecked Sendable {
         }
     }
 
+    /// Переходит в каталог и возвращает его канонический путь (PWD) или nil, если это не каталог.
+    public func canonicalDirectory(_ path: String) async throws -> String? {
+        try await session(idempotent: true) {
+            let r = try await command("CWD \(path)")
+            guard r.isSuccess else { return nil }
+            let p = try await command("PWD")
+            return p.code == 257 ? FTPReplyParsing.parsePWD(p.message) ?? path : path
+        }
+    }
+
     /// Листинг каталога.
     public func list(_ path: String) async throws -> [FileItem] {
         try await session(idempotent: true) {
@@ -500,6 +510,15 @@ public final class FTPConnection: @unchecked Sendable {
             if again.isSuccess { return }
             throw mapError(r, command: "MKD")
         }
+    }
+
+    /// Создаёт каталог со всеми недостающими родителями (аналог mkdir -p).
+    public func ensureDirectoryTree(_ path: String) async throws {
+        let normalized = PathUtils.normalize(path)
+        if normalized == "/" { return }
+        if try await isDirectory(normalized) { return }
+        try await ensureDirectoryTree(PathUtils.parent(normalized))
+        try await ensureDirectory(normalized)
     }
 
     public func removeDirectory(_ path: String) async throws {

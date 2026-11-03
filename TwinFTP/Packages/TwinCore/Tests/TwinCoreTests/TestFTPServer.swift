@@ -7,7 +7,8 @@ import XCTest
 final class TestFTPServer {
     let port: Int
     let root: URL
-    private let process: Process
+    private var process: Process
+    private let extraArgs: [String]
 
     static let user = "twin"
     static let password = "пароль 123"
@@ -36,10 +37,15 @@ final class TestFTPServer {
             throw XCTSkip("python3 + pyftpdlib не установлены — интеграционные тесты пропущены")
         }
 
+        self.extraArgs = extraArgs
         root = FileManager.default.temporaryDirectory.appendingPathComponent("twinftp-root-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         port = Int.random(in: 21000...29000)
-        process = Process()
+        process = try Self.launch(port: port, root: root, extraArgs: extraArgs)
+    }
+
+    private static func launch(port: Int, root: URL, extraArgs: [String]) throws -> Process {
+        let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = ["python3", Self.scriptURL.path, "--port", String(port), "--root", root.path] + extraArgs
         process.standardOutput = FileHandle.nullDevice
@@ -49,11 +55,20 @@ final class TestFTPServer {
         // Ждём, пока порт начнёт принимать соединения.
         let deadline = Date().addingTimeInterval(10)
         while Date() < deadline {
-            if Self.canConnect(port: port) { return }
+            if Self.canConnect(port: port) { return process }
             Thread.sleep(forTimeInterval: 0.1)
         }
         process.terminate()
         throw XCTSkip("Тестовый FTP-сервер не запустился")
+    }
+
+    /// Имитация сбоя: убивает сервер (обрывая все соединения) и запускает заново на том же порту.
+    func crashAndRestart(downtime: TimeInterval = 0.5) throws {
+        kill(process.processIdentifier, SIGKILL)
+        let deadline = Date().addingTimeInterval(5)
+        while Self.canConnect(port: port) && Date() < deadline { Thread.sleep(forTimeInterval: 0.05) }
+        Thread.sleep(forTimeInterval: downtime)
+        process = try Self.launch(port: port, root: root, extraArgs: extraArgs)
     }
 
     static func canConnect(port: Int) -> Bool {
