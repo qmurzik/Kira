@@ -31,6 +31,7 @@ struct DualPaneView: View {
             BottomActionBar(dialog: $dialog)
         }
         .background(Theme.background.ignoresSafeArea())
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .animation(.easeInOut(duration: 0.2), value: app.network.isOnline)
         .modifier(PaneDialogsHost(dialog: $dialog))
     }

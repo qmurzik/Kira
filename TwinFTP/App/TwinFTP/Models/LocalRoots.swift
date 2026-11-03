@@ -48,7 +48,7 @@ final class LocalRootStore: ObservableObject {
     }
 
     func reload() {
-        var result = [LocalRoot(id: "documents", name: "На iPhone", url: Self.documentsURL, kind: .appDocuments)]
+        var result = [LocalRoot(id: "documents", name: "iPhone", url: Self.documentsURL, kind: .appDocuments)]
         for saved in loadSaved() {
             var stale = false
             guard let url = try? URL(resolvingBookmarkData: saved.bookmark, options: [], relativeTo: nil, bookmarkDataIsStale: &stale) else {

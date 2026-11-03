@@ -317,6 +317,7 @@ struct BreadcrumbBar: View {
                     }
                 }
             }
+            .defaultScrollAnchor(.trailing)
             .onAppear { proxy.scrollTo(crumbs.count - 1, anchor: .trailing) }
             .onChange(of: pane.path) { _, _ in
                 withAnimation { proxy.scrollTo(pane.breadcrumbs.count - 1, anchor: .trailing) }

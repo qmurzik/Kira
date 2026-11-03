@@ -96,6 +96,7 @@ struct SourceMenu: View {
                         .font(.system(size: 13.5, weight: .semibold))
                         .foregroundStyle(Theme.textPrimary)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                     Text(subtitle)
                         .font(.system(size: 10.5))
                         .foregroundStyle(Theme.textSecondary)

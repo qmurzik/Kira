@@ -55,7 +55,8 @@ struct ServerProfile: Codable, Identifiable, Hashable {
 enum Keychain {
     private static let service = "app.twinftp.ftp-password"
 
-    static func save(password: String, for id: UUID) {
+    @discardableResult
+    static func save(password: String, for id: UUID) -> Bool {
         let account = id.uuidString
         let data = Data(password.utf8)
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
@@ -65,7 +66,7 @@ enum Keychain {
         var add = query
         add[kSecValueData as String] = data
         add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        SecItemAdd(add as CFDictionary, nil)
+        return SecItemAdd(add as CFDictionary, nil) == errSecSuccess
     }
 
     static func password(for id: UUID) -> String? {
@@ -123,7 +124,10 @@ final class ServerStore: ObservableObject {
         }
         if let password {
             if profile.savePassword && !profile.anonymous {
-                Keychain.save(password: password, for: profile.id)
+                if !Keychain.save(password: password, for: profile.id) {
+                    // Связка ключей недоступна (например, неподписанная сборка) — пароль живёт до перезапуска.
+                    sessionPasswords[profile.id] = password
+                }
             } else {
                 Keychain.delete(for: profile.id)
                 sessionPasswords[profile.id] = password.isEmpty ? nil : password

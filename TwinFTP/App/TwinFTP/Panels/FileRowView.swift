@@ -32,7 +32,7 @@ enum DateText {
     static func short(_ date: Date?) -> String {
         guard let date else { return "" }
         let cal = Calendar.current
-        if cal.isDateInToday(date) { return "сегодня " + time.string(from: date) }
+        if cal.isDateInToday(date) { return time.string(from: date) }
         if cal.isDateInYesterday(date) { return "вчера" }
         if cal.component(.year, from: date) == cal.component(.year, from: Date()) {
             return dayMonth.string(from: date).replacingOccurrences(of: ".", with: "")

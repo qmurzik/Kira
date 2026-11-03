@@ -486,9 +486,13 @@ final class AppModel: ObservableObject {
         profile.port = Int(parts[1]) ?? 21
         profile.username = parts[2]
         profile.plainTextWarningAcknowledged = true
-        if !servers.servers.contains(where: { $0.host == profile.host && $0.port == profile.port }) {
+        if let existing = servers.servers.first(where: { $0.host == profile.host && $0.port == profile.port }) {
+            profile = existing
+        } else {
             servers.upsert(profile, password: parts[3])
         }
+        // Неподписанная сборка в симуляторе может не иметь доступа к Keychain — держим пароль в памяти сеанса.
+        servers.setSessionPassword(parts[3], for: profile.id)
         if args.contains("-uitest-dark") { settings.appearance = .dark }
         if args.contains("-uitest-light") { settings.appearance = .light }
         // Немного демонстрационных файлов для снимков экрана UI-теста.
