@@ -318,9 +318,14 @@ struct BreadcrumbBar: View {
                 }
             }
             .defaultScrollAnchor(.trailing)
-            .onAppear { proxy.scrollTo(crumbs.count - 1, anchor: .trailing) }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { proxy.scrollTo(crumbs.count - 1, anchor: .trailing) }
+            }
             .onChange(of: pane.path) { _, _ in
-                withAnimation { proxy.scrollTo(pane.breadcrumbs.count - 1, anchor: .trailing) }
+                // Ждём перерисовки крошек, затем прокручиваем к текущей папке.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                    withAnimation { proxy.scrollTo(pane.breadcrumbs.count - 1, anchor: .trailing) }
+                }
             }
         }
         .onLongPressGesture(minimumDuration: 0.4, perform: onJump)
