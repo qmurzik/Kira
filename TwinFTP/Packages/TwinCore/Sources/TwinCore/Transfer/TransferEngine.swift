@@ -568,7 +568,7 @@ public actor TransferEngine {
             throw FTPError.verificationFailed("размер «\(name)»: получено \(written) из \(expected) байт")
         }
         if replacing && FileManager.default.fileExists(atPath: targetPath) {
-            _ = try FileManager.default.replaceItemAt(URL(fileURLWithPath: targetPath), withItemAt: URL(fileURLWithPath: partPath))
+            try LocalFileSystem.replaceItem(at: targetPath, with: partPath)
         } else {
             if FileManager.default.fileExists(atPath: targetPath) {
                 throw LocalFileError.alreadyExists(name)

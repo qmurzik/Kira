@@ -474,7 +474,7 @@ public final class ZipArchiveReader {
                 throw error
             }
             if fm.fileExists(atPath: target) {
-                _ = try fm.replaceItemAt(URL(fileURLWithPath: target), withItemAt: URL(fileURLWithPath: temp))
+                try LocalFileSystem.replaceItem(at: target, with: temp)
             } else {
                 try fm.moveItem(atPath: temp, toPath: target)
             }

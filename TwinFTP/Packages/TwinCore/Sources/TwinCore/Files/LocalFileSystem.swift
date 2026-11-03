@@ -137,7 +137,7 @@ public struct LocalFileSystem: Sendable {
             let temp = PathUtils.child(directory, ".\(name).twinftp-part")
             try? fm.removeItem(atPath: temp)
             if move { try fm.moveItem(atPath: source, toPath: temp) } else { try fm.copyItem(atPath: source, toPath: temp) }
-            _ = try fm.replaceItemAt(URL(fileURLWithPath: target), withItemAt: URL(fileURLWithPath: temp))
+            try Self.replaceItem(at: target, with: temp)
             return target
         }
         if move { try fm.moveItem(atPath: source, toPath: target) } else { try fm.copyItem(atPath: source, toPath: target) }
@@ -158,6 +158,25 @@ public struct LocalFileSystem: Sendable {
             }
         }
         return result
+    }
+
+    /// Атомарная (насколько возможно) замена: цель переименовывается в резервную копию,
+    /// новый файл ставится на её место, резервная копия удаляется. При ошибке цель восстанавливается.
+    public static func replaceItem(at target: String, with source: String) throws {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: target) else {
+            try fm.moveItem(atPath: source, toPath: target)
+            return
+        }
+        let backup = PathUtils.child(PathUtils.parent(target), "." + PathUtils.lastComponent(target) + ".twinftp-old-" + UUID().uuidString.prefix(8))
+        try fm.moveItem(atPath: target, toPath: backup)
+        do {
+            try fm.moveItem(atPath: source, toPath: target)
+        } catch {
+            try? fm.moveItem(atPath: backup, toPath: target)
+            throw error
+        }
+        try? fm.removeItem(atPath: backup)
     }
 
     public func freeSpace(at path: String) -> Int64? {
