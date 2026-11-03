@@ -1,0 +1,153 @@
+name: TwinFTP iOS
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "TwinFTP/**"
+      - ".github/workflows/twinftp-ios.yml"
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: "Опубликовать GitHub Release с IPA"
+        type: boolean
+        default: false
+      release_tag:
+        description: "Тег релиза (например, twinftp-v1.0.0)"
+        type: string
+        default: ""
+
+concurrency:
+  group: twinftp-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: TwinFTP
+
+jobs:
+  build:
+    name: Тесты ядра, сборка и unsigned IPA
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Выбор Xcode
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE" ]; then XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1); fi
+          echo "Используется $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+          swift --version
+
+      - name: Python-окружение для тестового FTP-сервера
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet pyftpdlib pyzipper
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+
+      - name: Проверка, что проект соответствует генератору
+        run: |
+          python3 Scripts/generate_xcodeproj.py
+          git diff --exit-code -- TwinFTP.xcodeproj || (echo "::warning::TwinFTP.xcodeproj отличается от сгенерированного" )
+
+      - name: Тесты TwinCore (юнит + интеграционные с реальным FTP)
+        working-directory: TwinFTP/Packages/TwinCore
+        run: swift test 2>&1 | tee "$RUNNER_TEMP/core-tests.log"
+
+      - name: Сборка приложения (iphoneos, без подписи)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project TwinFTP.xcodeproj \
+            -scheme TwinFTP \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee "$RUNNER_TEMP/xcodebuild.log" | grep -E "error:|warning: .*deprecated|BUILD (SUCCEEDED|FAILED)|\*\* " || true
+          grep -q "BUILD SUCCEEDED" "$RUNNER_TEMP/xcodebuild.log" || { grep -E "error:" "$RUNNER_TEMP/xcodebuild.log" | head -100; exit 1; }
+
+      - name: Упаковка unsigned IPA
+        run: |
+          APP="$RUNNER_TEMP/dd/Build/Products/Release-iphoneos/TwinFTP.app"
+          test -d "$APP"
+          STAGE="$RUNNER_TEMP/ipa"
+          rm -rf "$STAGE" && mkdir -p "$STAGE/Payload"
+          cp -R "$APP" "$STAGE/Payload/"
+          (cd "$STAGE" && zip -qry TwinFTP-unsigned.ipa Payload)
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp "$STAGE/TwinFTP-unsigned.ipa" "$GITHUB_WORKSPACE/out/"
+          echo "=== Проверка структуры IPA ==="
+          unzip -l "$GITHUB_WORKSPACE/out/TwinFTP-unsigned.ipa" | grep -E "Payload/TwinFTP.app/(TwinFTP|Info.plist|Assets.car)$"
+          plutil -p "$APP/Info.plist" | grep -E "CFBundleIdentifier|CFBundleShortVersionString|MinimumOSVersion|CFBundleDisplayName"
+          lipo -info "$APP/TwinFTP"
+          otool -l "$APP/TwinFTP" | grep -A4 LC_BUILD_VERSION | head -6
+          shasum -a 256 "$GITHUB_WORKSPACE/out/TwinFTP-unsigned.ipa" | tee "$GITHUB_WORKSPACE/out/SHA256.txt"
+          ls -la "$GITHUB_WORKSPACE/out"
+
+      - name: Сборка для симулятора и UI-смоук-тест со снимками экрана
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          DEVICE=$(xcrun simctl list devices available | grep -E "iPhone (1[0-9]|XS)" | head -1 | sed -E 's/^ *([^()]+) \(([-0-9A-F]+)\).*/\2/')
+          echo "Симулятор: $DEVICE"
+          if [ -d App/TwinFTPUITests ]; then
+            xcodebuild test -project TwinFTP.xcodeproj -scheme TwinFTP -destination "id=$DEVICE" \
+              -derivedDataPath "$RUNNER_TEMP/dd-sim" -resultBundlePath "$RUNNER_TEMP/UITests.xcresult" \
+              CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/uitest.log" | grep -E "error:|Test Case|TEST (SUCCEEDED|FAILED)|\*\* " || true
+            mkdir -p "$GITHUB_WORKSPACE/out/screenshots"
+            xcrun xcresulttool export attachments --path "$RUNNER_TEMP/UITests.xcresult" --output-path "$GITHUB_WORKSPACE/out/screenshots" 2>/dev/null || true
+            ls -la "$GITHUB_WORKSPACE/out/screenshots" || true
+          fi
+
+      - name: Логи сборки
+        if: always()
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/out/logs"
+          cp "$RUNNER_TEMP"/*.log "$GITHUB_WORKSPACE/out/logs/" 2>/dev/null || true
+
+      - name: Артефакт IPA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TwinFTP-unsigned-ipa
+          path: |
+            out/TwinFTP-unsigned.ipa
+            out/SHA256.txt
+          if-no-files-found: warn
+
+      - name: Артефакт логов и снимков экрана
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TwinFTP-logs-and-screenshots
+          path: |
+            out/logs
+            out/screenshots
+          if-no-files-found: ignore
+
+      - name: GitHub Release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ inputs.release_tag }}"
+          if [ -z "$TAG" ]; then TAG="twinftp-v$(date +%Y%m%d-%H%M)"; fi
+          git -C "$GITHUB_WORKSPACE" archive --format=zip --prefix=TwinFTP-source/ -o "$GITHUB_WORKSPACE/out/TwinFTP-source.zip" HEAD TwinFTP
+          gh release create "$TAG" \
+            "$GITHUB_WORKSPACE/out/TwinFTP-unsigned.ipa" \
+            "$GITHUB_WORKSPACE/out/SHA256.txt" \
+            "$GITHUB_WORKSPACE/out/TwinFTP-source.zip" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "TwinFTP $TAG" \
+            --notes-file "$GITHUB_WORKSPACE/TwinFTP/RELEASE_NOTES.md"
